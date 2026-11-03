@@ -1,58 +1,147 @@
-# FUT Bots ⚽
+# ⚽ FUT Galeria Bot
 
-Duas extensões **gratuitas e de código aberto** para o Chrome que automatizam tarefas repetitivas no **EA FC Ultimate Team Web App**, usando o Paletools.
+Extensão **gratuita e de código aberto** para o Chrome que completa as galerias do **Paletools** no **EA FC Ultimate Team Web App** para você.
 
-| Bot | O que faz |
+Para cada carta que falta na galeria, o bot:
+
+1. abre o **Mercado** da carta;
+2. compra no **Comprar já** se o preço couber no seu limite;
+3. lista a carta no **mais barato** do mercado;
+4. passa para a próxima carta e, no fim, para o **próximo time**.
+
+> ⚠️ **Aviso importante:** a EA proíbe automação no Web App. Usar este bot pode levar a restrições no mercado ou até ao banimento da sua conta. Use com moderação e **por sua conta e risco**. Este projeto não tem nenhuma ligação com a EA nem com o Paletools.
+
+---
+
+## 📋 O que você precisa
+
+- **Google Chrome** no computador (também funciona no Edge, Brave, Opera e outros baseados em Chromium)
+- **Paletools** instalado e funcionando no Web App
+- Web App em **português** (o bot encontra os botões pelo texto, como "Comprar já" e "Listar no Mercado")
+- Moedas na conta, claro 😄
+
+---
+
+## 🔧 Passo 1: instalar a extensão
+
+1. **Baixe o bot:** clique no botão verde **Code** no topo desta página e depois em **Download ZIP**.
+2. **Extraia o ZIP:** clique com o botão direito no arquivo baixado → **Extrair tudo**. Vai aparecer uma pasta (ex.: `fut-galeria-bot-main`). Guarde-a num lugar fixo, como `Documentos`: **se apagar ou mover a pasta, a extensão para de funcionar.**
+3. **Abra as extensões do Chrome:** digite `chrome://extensions` na barra de endereço e aperte Enter.
+4. **Ative o Modo do desenvolvedor:** chave no canto superior direito da página.
+5. Clique em **Carregar sem compactação** e selecione a pasta que você extraiu (a que tem o arquivo `manifest.json` dentro).
+6. Pronto! O **FUT Galeria Bot** aparece na lista de extensões. Se quiser, clique no ícone de quebra-cabeça 🧩 do Chrome e fixe o bot.
+
+> 💡 Se aparecer o erro "Manifesto ausente", você selecionou a pasta errada. Entre na pasta extraída até achar a que tem o `manifest.json` e selecione essa.
+
+---
+
+## 🚀 Passo 2: abrir o bot no Web App
+
+1. Abra o [EA FC Web App](https://www.ea.com/ea-sports-fc/ultimate-team/web-app/) e faça login.
+2. O painel **Galeria Bot** aparece sozinho na tela. Se não aparecer, recarregue a página (F5).
+3. Na primeira vez, um **tutorial interativo** mostra cada parte do painel. Use as setas ← → do teclado para avançar. Para ver de novo, clique no **?** no topo do painel.
+
+**Dicas do painel:** arraste pelo topo para mudar de lugar e clique no **–** para minimizar.
+
+---
+
+## 🖼️ Passo 3: abrir a galeria no Paletools
+
+1. No Web App, abra o menu do Paletools e entre em **Gallery**.
+2. Escolha a **Category** (a liga) e o **Set** (o time) por onde quer começar.
+3. Confira o painel do bot: o anel mostra quantas cartas o time já tem (ex.: **7/15**) e **Faltam** mostra quantas ele vai comprar.
+
+> 💡 Tem cartas no clube que ainda não foram incluídas na galeria? Clique em **Include** nelas antes de começar, para o bot não comprar o que você já tem.
+
+---
+
+## ⚙️ Passo 4: configurar
+
+As opções ficam em quatro abas no painel. Tudo é salvo automaticamente.
+
+### Aba **Compra**
+| Opção | O que faz |
 | --- | --- |
-| [**Galeria Bot**](galeria-bot/) | Compra as cartas que faltam numa galeria do Paletools (até um preço máximo), lista no mais barato e passa para o próximo time. |
-| [**Relist Bot**](relist-bot/) | Relista os itens da Lista de Transferências pelo preço mais barato do mercado. |
+| **Preço máximo por carta** | Se a carta mais barata do mercado custar mais que isso, o bot pula ela. O preço é conferido duas vezes antes de comprar. |
+| **Gasto máximo total** | Teto de moedas para a rodada inteira, somando todos os times. Ao chegar nele, o bot para. `0` = sem limite. |
+| **Só o que falta** | O bot calcula sozinho quanto comprar (ex.: o time pede 15, você tem 7 → compra 8). **Recomendado deixar ligado.** |
+| **Quantidade** | Quantas cartas comprar por time, usada só com "Só o que falta" desligado. |
 
-> ⚠️ **Aviso:** a EA proíbe automação no Web App. Usar estes bots pode levar a restrições ou banimento da sua conta. Use com moderação e **por sua conta e risco**. Este projeto não tem nenhuma ligação com a EA ou com o Paletools.
+### Aba **Times**
+| Opção | O que faz |
+| --- | --- |
+| **Ir para o próximo time** | Ao terminar um time, passa para o próximo da lista e pula os que já estão completos. |
+| **Máximo de times** | Quantos times completar por rodada. `0` = vai até o fim da liga. |
 
-## Requisitos
+### Aba **Venda**
+| Opção | O que faz |
+| --- | --- |
+| **Listar no mais barato** | Logo depois de comprar, faz **Listar no Mercado → Mais barato → Listar**. |
+| **Não listar abaixo de** | Proteção contra prejuízo: se o mais barato do mercado estiver abaixo desse valor, a carta fica nos não atribuídos para você decidir. `0` = aceita qualquer preço. |
+| **Limpar quando encher** | Se a Lista de Transferências lotar, o bot registra as vendas, clica em **Retirar vendidos**, envia os não repetidos ao clube e volta para a galeria. |
+| **Limpar a cada N compras** | Faz essa limpeza com frequência. `0` = desligado. |
+| **Limpar ao trocar de time** | Faz a limpeza entre um time e outro. |
+| **🧹 Limpar** | Faz a limpeza na hora. |
 
-- Google Chrome (ou outro navegador baseado em Chromium: Edge, Brave, Opera…)
-- Paletools instalado e funcionando no Web App
-- Web App em **português**: os bots procuram os botões pelo texto (ex.: "Comprar já", "Retirar vendidos")
+### Aba **Ajustes**
+| Opção | O que faz |
+| --- | --- |
+| **Pausa entre ações** | Tempo de espera entre cada clique, em milissegundos. Valores maiores são mais lentos, mas mais seguros. |
+| **Ofertas por carta** | Se alguém comprar a carta antes de você, quantas vezes tentar a próxima mais barata. |
+| **Respeitar vagas** | Com quantidade manual, não compra mais do que as vagas livres do time. |
 
-## Instalação
+---
 
-1. Baixe o projeto: botão verde **Code → Download ZIP** e extraia (ou `git clone`).
-2. Abra `chrome://extensions` no navegador.
-3. Ative o **Modo do desenvolvedor** (canto superior direito).
-4. Clique em **Carregar sem compactação** e selecione a pasta `galeria-bot` e/ou `relist-bot`.
-5. Abra o [Web App](https://www.ea.com/ea-sports-fc/ultimate-team/web-app/). O painel do bot aparece na tela.
+## ▶️ Passo 5: testar e rodar
 
-Para atualizar: baixe a versão nova, substitua a pasta e clique em ↻ na extensão em `chrome://extensions`.
+1. **Comece sempre pelo 🧪 Modo teste.** Ele faz todo o caminho, menos a compra, e mostra no log por quanto compraria cada carta. Nenhuma moeda é gasta.
+2. Clique em **Iniciar** e acompanhe a seção **Atividade**.
+3. Se estiver tudo certo, clique em **Parar**, mude para **⚡ Comprar de verdade** e clique em **Iniciar** de novo.
 
-## Galeria Bot
+O bot **para sozinho, com um apito**, quando:
+- aparece um **captcha** (resolva e clique em Iniciar de novo);
+- as **moedas acabam** ou o **gasto máximo total** é atingido;
+- a EA **limita o mercado** temporariamente (espere um tempo antes de voltar).
 
-1. No Paletools, entre em **Gallery**, escolha a **Category** (liga) e o **Set** (time).
-2. Configure o **preço máximo por carta** e, se quiser, o **gasto máximo total**.
-3. Comece pelo **🧪 Modo teste**: faz todo o caminho, menos a compra, e mostra por quanto compraria.
-4. Quando estiver confiante, use **⚡ Comprar de verdade** e clique em **Iniciar**.
+---
 
-Principais opções: comprar só o que falta, ir para o próximo time automaticamente, listar no mais barato com preço mínimo de proteção, limpar a Lista de Transferências quando encher, log completo e controle de lucro/perda (exportável em .txt e .csv). O botão **?** no painel abre um tutorial passo a passo.
+## 📊 Log e lucro
 
-O bot para sozinho (com um apito) se aparecer captcha, faltarem moedas ou a EA limitar o mercado.
+- **📜 Log:** histórico completo de tudo que o bot fez, filtrado por período. Dá para baixar em `.txt`.
+- **💰 Lucro:** compras, vendas e lucro por sessão, por dia ou por período personalizado. Dá para baixar em `.csv`.
 
-## Relist Bot
+As vendas são registradas quando você abre a **Lista de Transferências** no Web App. Se alguma venda não for reconhecida, use **marcar venda** na tela de lucro.
 
-Abra a **Lista de Transferências** e clique em iniciar. Opções:
+---
 
-- preço mínimo para listar (0 = sem mínimo)
-- máximo de itens por rodada
-- intervalo entre ações (ms)
-- clicar em "Retirar vendidos"
-- relistar os expirados
-- listar os itens não atribuídos
+## ❓ Problemas comuns
 
-## Contribuindo
+| Problema | Solução |
+| --- | --- |
+| O painel não aparece | Recarregue a página (F5). Confira em `chrome://extensions` se a extensão está ativada. |
+| "Abra a Gallery" fica aparecendo | Abra Paletools → **Gallery** e escolha a liga e o time. |
+| O bot não acha os botões | Deixe o Web App em **português** e confira se o Paletools está funcionando. |
+| Pula todas as cartas | O **preço máximo por carta** está baixo demais para o mercado atual. |
+| Pede captcha com frequência | Aumente a **pausa entre ações** e faça intervalos entre as rodadas. |
 
-Contribuições são bem-vindas! Abra uma *issue* para relatar bugs ou sugerir ideias, ou mande um *pull request*.
+---
 
-Se a EA mudar o layout do Web App e algum botão parar de ser encontrado, a correção normalmente está nas expressões regulares passadas para a função `find(...)` em `content.js`.
+## 🔄 Como atualizar
 
-## Licença
+1. Baixe a versão nova (**Code → Download ZIP**) e extraia.
+2. Substitua os arquivos da pasta antiga pelos novos.
+3. Em `chrome://extensions`, clique no ↻ do FUT Galeria Bot e recarregue o Web App.
+
+Suas configurações e o histórico de lucro são mantidos.
+
+---
+
+## 🤝 Contribuindo
+
+Achou um bug ou tem uma ideia? Abra uma [issue](../../issues). Quer melhorar o código? Mande um *pull request*!
+
+Se a EA mudar o layout do Web App e algum botão parar de ser encontrado, a correção normalmente está nas expressões regulares passadas para a função `find(...)` em [`content.js`](content.js).
+
+## 📄 Licença
 
 [MIT](LICENSE): use, modifique e distribua à vontade, mantendo o crédito.
