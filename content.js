@@ -6,6 +6,9 @@
   if (window.__fgb) return;
   window.__fgb = true;
 
+  // página de doação (opcional, aparece no rodapé do painel)
+  const DONATE_URL = 'https://ko-fi.com/ericklucena';
+
   // ---------- configuração ----------
   const KEY = 'fgb_cfg_v1';
   const DEF = { maxPrice: 4000, maxTotal: 0, qty: 5, autoQty: true, autoNext: true, maxSets: 0, respectSlots: true, list: true, minList: 0, cleanFull: true, cleanBetween: false, cleanEvery: 10, retries: 4, dryRun: true, delay: 900 };
@@ -833,6 +836,8 @@
     .log{background:var(--bg);border:1px solid var(--line);border-radius:11px;height:132px;overflow:auto;padding:6px 9px;font-size:12px;white-space:pre-wrap}
     .log div{padding:2px 0;border-bottom:1px solid #ffffff06}
     .foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mut)}
+    .don{display:block;text-align:center;font-size:12px;font-weight:600;color:var(--mut);text-decoration:none;padding:7px;border:1px dashed var(--line);border-radius:10px}
+    .don:hover{color:var(--tx);border-color:var(--acc);background:var(--bg2)}
     ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#2a3546;border-radius:8px}
 
     /* minimizado */
@@ -954,6 +959,7 @@
           <div class="log" id="log"></div>
         </div>
         <div class="foot"><span id="sessPl">Sessão: —</span><span id="clock"></span></div>
+        <a class="don" href="${DONATE_URL}" target="_blank" rel="noopener noreferrer">Gostou do bot? Apoie o projeto no Ko-fi</a>
       </div>
     </div>
     <div class="mini" id="mini"><div class="logo">⚽</div><b id="miniTxt">Galeria Bot</b></div>

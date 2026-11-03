@@ -136,6 +136,16 @@ Suas configurações e o histórico de lucro são mantidos.
 
 ---
 
+## ☕ Apoie o projeto
+
+O FUT Galeria Bot é e vai continuar sendo **grátis**. Se ele te ajudou e você quiser apoiar o desenvolvimento, qualquer valor é bem-vindo:
+
+[![Apoie no Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/ericklucena)
+
+A doação é totalmente opcional e não libera nenhuma função extra.
+
+---
+
 ## 🤝 Contribuindo
 
 Achou um bug ou tem uma ideia? Abra uma [issue](../../issues). Quer melhorar o código? Mande um *pull request*!
