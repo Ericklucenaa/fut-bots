@@ -17,7 +17,7 @@ Para cada carta que falta na galeria, o bot:
 
 - **Google Chrome** no computador (também funciona no Edge, Brave, Opera e outros baseados em Chromium)
 - **Paletools** instalado e funcionando no Web App
-- Web App em **português** (o bot encontra os botões pelo texto, como "Comprar já" e "Listar no Mercado")
+- Web App em **português, inglês ou espanhol** (o painel do bot é em português)
 - Moedas na conta, claro 😄
 
 ---
@@ -120,7 +120,7 @@ As vendas são registradas quando você abre a **Lista de Transferências** no W
 | --- | --- |
 | O painel não aparece | Recarregue a página (F5). Confira em `chrome://extensions` se a extensão está ativada. |
 | "Abra a Gallery" fica aparecendo | Abra Paletools → **Gallery** e escolha a liga e o time. |
-| O bot não acha os botões | Deixe o Web App em **português** e confira se o Paletools está funcionando. |
+| O bot não acha os botões | Confira se o Web App está em português, inglês ou espanhol e se o Paletools está funcionando. Se continuar, abra uma [issue](../../issues) dizendo o idioma e o texto do botão que o bot não achou. |
 | Pula todas as cartas | O **preço máximo por carta** está baixo demais para o mercado atual. |
 | Pede captcha com frequência | Aumente a **pausa entre ações** e faça intervalos entre as rodadas. |
 
@@ -140,7 +140,7 @@ Suas configurações e o histórico de lucro são mantidos.
 
 Achou um bug ou tem uma ideia? Abra uma [issue](../../issues). Quer melhorar o código? Mande um *pull request*!
 
-Se a EA mudar o layout do Web App e algum botão parar de ser encontrado, a correção normalmente está nas expressões regulares passadas para a função `find(...)` em [`content.js`](content.js).
+Os textos que o bot procura no Web App (botões, telas e mensagens) ficam todos no dicionário `T`, no começo do [`content.js`](content.js), com versões em português, inglês e espanhol. Se a EA mudar algum texto ou você quiser adicionar outro idioma, é só ajustar ali.
 
 ## 📄 Licença
 

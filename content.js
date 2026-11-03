@@ -26,6 +26,51 @@
   let running = false, stopReq = false;
   class Stop extends Error {}
 
+  // ---------- textos do Web App (português, inglês e espanhol) ----------
+  // O bot acha botões e telas pelo texto. Se algo não for encontrado no seu idioma, é aqui que se ajusta.
+  const BUYNOW = 'Comprar j[áa]|Buy Now|Comprar ya|C[óo]mpralo ya';
+  const T = {
+    // botão "Mercado" das cartas da galeria do Paletools
+    market: /^(Mercado|Market|Transfer Market|Search Market|Mercado de fichajes|Mercado de transferencias)$/i,
+    // linhas de resultado da busca e da Lista de Transferências
+    row: new RegExp(`${BUYNOW}|Pre[çc]o Inicial|Precio (de salida|inicial)|Start Price|Vendido|Sold|Lance|Bid|Puja`, 'i'),
+    rowBuyNow: new RegExp(`(?:${BUYNOW}):?\\s*([\\d.,]+)`, 'i'),
+    buyBtn: new RegExp(`^(?:${BUYNOW})(?:\\s*(?:por|for))?\\s*[\\d.,]+$`, 'i'),
+    btnPrice: new RegExp(`(?:${BUYNOW})(?:\\s*(?:por|for))?\\s*([\\d.,]+)`, 'i'),
+    soldOrExpired: /Vendido|Expirado|Caducado|Expired|Sold/i,
+    soldPrice: /(?:Vendido(?: por)?|Sold(?: for)?):?\s*([\d.,]+)/i,
+    bidPrice: /(?:Lance|Bid|Puja|Current Bid|Puja actual|Lance atual):?\s*([\d.,]+)/i,
+    noResults: /Nenhum resultado|No results|No hay resultados|Sin resultados|Ning[úu]n resultado/i,
+    won: /Parab[ée]ns, voc[êe] ganhou|Congratulations, you (won|bought)|(Enhorabuena|Felicidades|Felicitaciones)[^.]{0,30}(ganado|ganaste|comprado|compraste)/i,
+    boughtFor: /(?:Item comprado por|Item bought for|Bought for|Objeto comprado por|Art[íi]culo comprado por)\s*[\d.,]+/i,
+    // painel do item
+    listOnMarket: /^(Listar no Mercado de Transfer[êe]ncias|List on (the )?Transfer Market|(Anunciar|Poner|Listar|Vender) en (el )?mercado( de (fichajes|transferencias|transferibles))?)$/i,
+    sendToClub: /^(Enviar (ao Meu Clube|para o Clube)|Send to (My )?Club|Enviar (a|al) (mi )?club)$/i,
+    cheapest: /^(Mais barato|Cheapest|M[áa]s barato|Min(imum)? BIN|Find Min(imum)?( BIN| Price)?)$/i,
+    listForTransfer: /^(Listar para transfer[êe]ncia|List for Transfer|List Item|Listar para transferencia|Anunciar( para transferencia)?|Poner en venta)$/i,
+    // diálogos
+    okBuy: /^(Ok|Sim|Confirmar|Comprar|Yes|Confirm|Buy|Aceptar|S[íi])$/i,
+    okClose: /^(Ok|Fechar|Cancelar|Close|Cancel|Aceptar|Cerrar)$/i,
+    okYes: /^(Ok|Sim|Confirmar|Yes|Confirm|Aceptar|S[íi])$/i,
+    lostDialog: /j[áa] foi|expirou|n[ãa]o foi poss|lance (maior|superado)|already|no longer|outbid|ya (se )?ha|ya fue|caduc|superad|no se pudo|no es posible/i,
+    lostPopup: /j[áa] foi (vendido|comprado)|expirou|n[ãa]o est[áa] mais dispon|n[ãa]o foi poss[íi]vel|lance (maior|superado)|item.*(vendido|indispon)|already sold|no longer|outbid|ya (se )?ha vendido|ya fue (vendido|comprado)|ya no est[áa] disponible|no se pudo|caduc|superad/i,
+    // bloqueios
+    captcha: /captcha|verifica[çc][ãa]o|n[ãa]o sou um rob[ôo]|verification|i'?m not a robot|verificaci[óo]n|no soy un robot/i,
+    noCoins: /moedas insuficientes|n[ãa]o tem moedas|insufficient|not enough coins|monedas insuficientes|no tienes (suficientes )?monedas/i,
+    tooMany: /muitas (a[çc][õo]es|solicita)|limite.*(mercado|transfer)|acesso ao mercado|too many|market access|temporarily (blocked|restricted)|demasiadas (acciones|solicitudes)|acceso al mercado|l[íi]mite.*mercado/i,
+    full: /lista de transfer[êe]ncias?[^.]{0,40}(cheia|lotada|completa|atingiu)|transfer list is full|list is full|n[ãa]o h[áa] (mais )?espa[çc]o|lista de (transferibles|transferencias)[^.]{0,40}(llena|completa)|no hay (m[áa]s )?espacio/i,
+    // Lista de Transferências e navegação
+    transferList: /^(Lista de Transfer[êe]ncias|Transfer List|Lista de transferibles|Lista de transferencias)$/i,
+    soldItems: /^(Itens vendidos|Itens não vend\.|Sold Items|Unsold Items|Objetos vendidos|Art[íi]culos vendidos|No vendidos|Objetos no vendidos)$/i,
+    clearSold: /^(Retirar vendidos|Clear Sold|Quitar vendidos|Borrar vendidos|Eliminar vendidos)$/i,
+    sendNonDup: /^(Envie|Enviar|Send)\s+(n[ãa]o|non?)[-\s]?dup\S*\s+.*\bclu(b|be)\b/i,
+    transfersNav: /^(Transfer\.?|Transfers|Transferencias|Fichajes)$/i,
+    home: /^(In[íi]cio|Home)$/i,
+    gallery: /^(Gallery|Galeria|Galer[íi]a)$/i,
+    // posições (pt / en / es), usadas para diferenciar versões da mesma carta
+    pos: /^(GL|ZAG|LD|LE|VOL|MC|MEI|ME|MD|PE|PD|ATA|SA|GK|CB|LB|RB|LWB|RWB|CDM|CM|CAM|LM|RM|LW|RW|ST|CF|POR|DFC|LI|CAD|CAI|MCD|MCO|MI|EI|ED|DC|SD)$/i,
+  };
+
   // menor elemento visível cujo texto bate com a regex (prefere botões)
   // texto sem os rótulos de atalho do Paletools ("[KeyC]", "[ KeyQ ]"…), que grudam no texto dos botões
   const btnText = el => norm((el.textContent || '').replace(/\[\s*(Key|Digit|Numpad)?\w{0,12}\s*\]/g, ' '));
@@ -60,13 +105,13 @@
   // para o bot se aparecer captcha, limite do mercado ou falta de moedas
   function checkBlockers() {
     const t = popupText();
-    if (/captcha|verifica[çc][ãa]o|n[ãa]o sou um rob[ôo]/i.test(t)) throw new Stop('Apareceu verificação (captcha). Resolva na página e inicie de novo.');
-    if (/moedas insuficientes|n[ãa]o tem moedas|insufficient/i.test(t)) throw new Stop('Moedas insuficientes.');
+    if (T.captcha.test(t)) throw new Stop('Apareceu verificação (captcha). Resolva na página e inicie de novo.');
+    if (T.noCoins.test(t)) throw new Stop('Moedas insuficientes.');
     if (FULL_RE.test(t)) return;  // lista de transferências cheia: o bot limpa e segue
-    if (/muitas (a[çc][õo]es|solicita)|limite.*(mercado|transfer)|acesso ao mercado|too many/i.test(t)) throw new Stop('O EA limitou o mercado (muitas ações). Pare um tempo antes de usar de novo.');
+    if (T.tooMany.test(t)) throw new Stop('O EA limitou o mercado (muitas ações). Pare um tempo antes de usar de novo.');
   }
 
-  const FULL_RE = /lista de transfer[êe]ncias?[^.]{0,40}(cheia|lotada|completa|atingiu)|transfer list is full|n[ãa]o h[áa] (mais )?espa[çc]o|list is full/i;
+  const FULL_RE = T.full;
 
   async function waitFor(fn, ms, what) {
     const end = Date.now() + ms;
@@ -94,13 +139,13 @@
 
   function exactMercado(root = document) {
     return [...root.querySelectorAll('button, [role=button], div, span, a')]
-      .filter(e => /^Mercado$/i.test(norm(e.textContent)) && vis(e))
+      .filter(e => T.market.test(norm(e.textContent)) && vis(e))
       .filter((e, _, arr) => !arr.some(o => o !== e && e.contains(o)));
   }
 
-  const NOT_NAME = /^([A-Z]{2,4}\s?\d{1,2}|Mercado|Missing.*|Collected.*|Include|Remove|GL|ZAG|LD|LE|VOL|MC|MEI|ME|MD|PE|PD|ATA|SA|points?|\W+)$/i;
+  const NOT_NAME = /^([A-Z]{2,4}\s?\d{1,2}|Missing.*|Collected.*|Include|Remove|points?|\W+)$/i;
   function cardName(tile, lines) {
-    const ok = s => s && /[A-Za-zÀ-ÿ]{2,}/.test(s) && !NOT_NAME.test(s) && !/[★*]\d|\d[ED]\d|\[/.test(s) && s.length < 40;
+    const ok = s => s && /[A-Za-zÀ-ÿ]{2,}/.test(s) && !NOT_NAME.test(s) && !T.market.test(s) && !T.pos.test(s) &&!/[★*]\d|\d[ED]\d|\[/.test(s) && s.length < 40;
     let n = lines.find(ok);
     if (n) return n;
     // o nome pode ficar fora do bloco, logo acima dele: procura pelo texto que está ali na tela
@@ -146,7 +191,7 @@
       const rating = num(lines.find(l => /^\d{2}$/.test(l)));
       const missing = num((tile.innerText.match(/Missing\s*[·•-]?\s*([\d.,]+)\s*points/i) || [])[1]);
       // posições da carta (MD PD ATA…) diferenciam versões do mesmo jogador com o mesmo overall
-      const posTokens = lines.filter(l => /^(GL|ZAG|LD|LE|VOL|MC|MEI|ME|MD|PE|PD|ATA|SA)$/i.test(l)).join(' ');
+      const posTokens = lines.filter(l => T.pos.test(l)).join(' ');
       const pos = tile.parentElement ? [...tile.parentElement.children].indexOf(tile) : -1;
       const key = name ? [name, rating, posTokens, missing].join('|') : 'pos' + pos + '|' + rating;
       return { btn, tile, name: name || 'carta #' + (pos + 1), rating, missing, key, isMissing: /Missing/i.test(tile.innerText) };
@@ -156,18 +201,19 @@
   // ---------- mercado ----------
   // só linhas de leilão de verdade (o Paletools usa a mesma classe nas cartas da galeria)
   const rows = () => [...document.querySelectorAll('.listFUTItem')]
-    .filter(r => vis(r) && !exactMercado(r).length && /Comprar J[áa]|Pre[çc]o Inicial|Vendido|Lance|Buy Now|Start Price/i.test(r.innerText));
-  const rowBuyNow = r => num((norm(r.innerText).match(/Comprar J[áa]:?\s*([\d.,]+)/i) || [])[1]);
-  const buyBtn = () => find(/^Comprar j[áa] por\s*[\d.,]+/i);
-  const btnPrice = b => num((norm(b.textContent).match(/Comprar j[áa] por\s*([\d.,]+)/i) || [])[1]);
+    .filter(r => vis(r) && !exactMercado(r).length && T.row.test(r.innerText));
+  const rowBuyNow = r => num((norm(r.innerText).match(T.rowBuyNow) || [])[1]);
+  // pelo texto ("Comprar já por 1.000" / "Buy Now for 1,000" / "Comprar ya por 1.000") ou pela classe do botão
+  const buyBtn = () => find(T.buyBtn) || [...document.querySelectorAll('button.buyButton')].find(b => vis(b) && num(b.textContent) != null) || null;
+  const btnPrice = b => num((norm(b.textContent).match(T.btnPrice) || [])[1]) ?? num(b.textContent);
   const noResults = () => document.querySelector('.ut-no-results-view') && vis(document.querySelector('.ut-no-results-view'))
-    || /Nenhum resultado|No results/i.test(pageText());
+    || T.noResults.test(pageText());
   // só a mensagem de vitória da compra ("Vendido por" também aparece em ofertas vendidas para outra pessoa)
-  const wonText = () => /Parab[ée]ns, voc[êe] ganhou|Congratulations, you (won|bought)/i.test(pageText());
+  const wonText = () => T.won.test(pageText());
   // painel do item com ações de dono (só aparece depois que a carta é sua)
   const ownedPanel = () => !buyBtn() && (
-    (!!find(/^Listar no Mercado de Transfer[êe]ncias$/i) && !!find(/^Enviar (ao Meu Clube|para o Clube)$/i))
-    || /Item comprado por\s*[\d.,]+/i.test(pageText()));
+    (!!find(T.listOnMarket) && !!find(T.sendToClub))
+    || T.boughtFor.test(pageText()));
   // saldo de moedas no topo do Web App (para confirmar que a compra descontou)
   function coins() {
     for (const el of document.querySelectorAll('.view-navbar-currency-coins, .ut-navigation-bar-view .coins, [class*="currency-coins"]')) {
@@ -197,7 +243,7 @@
       if (stopReq) throw new Stop('Parado por você.');
       let ident = itemIdent(null, card);
       const list = rows()
-        .filter(r => !tried.has(r) && !triedSig.has(sig(r)) && !/Vendido|Expirado|Expired|Sold/i.test(r.innerText))
+        .filter(r => !tried.has(r) && !triedSig.has(sig(r)) && !T.soldOrExpired.test(r.innerText))
         .map(r => ({ r, p: rowBuyNow(r) })).filter(x => x.p != null).sort((a, b) => a.p - b.p);
       if (rows().length && !list.length) break;                    // acabaram as ofertas desta busca
       if (list.length) {
@@ -222,10 +268,10 @@
         if (wonText()) return 'won';
         if (!okClicked) {
           const dlg = [...document.querySelectorAll('.ea-dialog-view, .view-modal-container, .ut-dialog')].filter(vis).pop();
-          const ok = dlg && find(/^(Ok|Sim|Confirmar|Comprar)$/i, { root: dlg });
-          if (ok && !/j[áa] foi|expirou|n[ãa]o foi poss|already|no longer|lance (maior|superado)|outbid/i.test(dlg.innerText)) { okClicked = true; click(ok); return null; }
+          const ok = dlg && find(T.okBuy, { root: dlg });
+          if (ok && !T.lostDialog.test(dlg.innerText)) { okClicked = true; click(ok); return null; }
         }
-        if (/j[áa] foi (vendido|comprado)|expirou|n[ãa]o est[áa] mais dispon|n[ãa]o foi poss[íi]vel|lance (maior|superado)|already sold|no longer|outbid|item.*(vendido|indispon)/i.test(popupText())) return 'lost';
+        if (T.lostPopup.test(popupText())) return 'lost';
         return null;
       }, 10000);
       // A carta é sua quando o painel mostra as ações de dono ("Listar no Mercado…", "Enviar ao Meu Clube").
@@ -240,7 +286,7 @@
       }
       // fecha o aviso de erro e confere mais uma vez (às vezes a confirmação chega atrasada)
       const dlg = [...document.querySelectorAll('.ea-dialog-view, .view-modal-container, .ut-dialog')].filter(vis).pop();
-      const ok = dlg && find(/^(Ok|Fechar|Cancelar)$/i, { root: dlg }); if (ok) { click(ok); await pause(0.5); }
+      const ok = dlg && find(T.okClose, { root: dlg }); if (ok) { click(ok); await pause(0.5); }
       if (await waitFor(ownedPanel, 2500)) return { r: 'bought', price, ident };
       // Só tenta outra oferta quando o jogo DISSE que perdeu (alguém comprou antes). Sem essa mensagem,
       // a compra pode ter dado certo sem o bot perceber; tentar de novo compraria a mesma carta repetida.
@@ -261,9 +307,9 @@
   }
 
   async function listCheapest() {
-    const acc = await waitFor(() => find(/^Listar no Mercado de Transfer[êe]ncias$/i), 6000, '"Listar no Mercado de Transferências"');
+    const acc = await waitFor(() => find(T.listOnMarket), 6000, '"Listar no Mercado de Transferências"');
     click(acc); await pause(0.7);
-    const cheap = await waitFor(() => find(/^Mais barato$/i), 6000, 'o botão "Mais barato"');
+    const cheap = await waitFor(() => find(T.cheapest), 6000, 'o botão "Mais barato"');
     const before = priceInputs().map(i => i.value).join('|');
     click(cheap);
     // o Paletools pesquisa o mercado; espera os preços mudarem
@@ -272,12 +318,12 @@
     const vals = priceInputs().map(i => num(i.value));
     const buyNow = vals.length ? vals[vals.length - 1] : null, start = vals.length > 1 ? vals[vals.length - 2] : null;
     if (cfg.minList && buyNow != null && buyNow < cfg.minList) return { ok: false, why: `mais barato é ${fmt(buyNow)}, abaixo do seu mínimo ${fmt(cfg.minList)} (ficou na lista de não atribuídos)` };
-    const lb = await waitFor(() => find(/^Listar para transfer[êe]ncia$/i), 5000, 'o botão "Listar para transferência"');
+    const lb = await waitFor(() => find(T.listForTransfer), 5000, 'o botão "Listar para transferência"');
     click(lb);
     const out = await waitFor(() => FULL_RE.test(popupText()) ? 'full' : !vis(lb) ? 'ok' : null, 8000);
     if (out === 'full') {
       const dlg = [...document.querySelectorAll('.ea-dialog-view, .view-modal-container, .ut-dialog')].filter(vis).pop();
-      const ok = dlg && find(/^(Ok|Fechar|Cancelar)$/i, { root: dlg }); if (ok) click(ok);
+      const ok = dlg && find(T.okClose, { root: dlg }); if (ok) click(ok);
       return { ok: false, full: true, why: 'a Lista de Transferências está cheia' };
     }
     return { ok: true, start, buyNow };
@@ -359,15 +405,15 @@
   // Lista de Transferências: itens vendidos viram "vendida" no histórico (casando nome + overall)
   const onTransferList = () => {
     const h = [...document.querySelectorAll('.ut-navigation-bar-view .title, .ut-navigation-bar-view h1')].find(vis);
-    if (h && /^(Lista de Transfer[êe]ncias|Transfer List)$/i.test(norm(h.textContent))) return true;
-    return !!(leavesWithText('Itens vendidos').length || leavesWithText('Itens não vend.').length || find(/^Retirar vendidos$/i));
+    if (h && T.transferList.test(norm(h.textContent))) return true;
+    return !!(leavesWithText(T.soldItems).length || find(T.clearSold));
   };
   function soldCounts() {
     const counts = {};
     for (const r of rows()) {
       const tx = norm(r.innerText);
-      let m = tx.match(/Vendido(?: por)?:?\s*([\d.,]+)/i);
-      if (!m && r.classList.contains('won')) m = tx.match(/Lance:?\s*([\d.,]+)/i);
+      let m = tx.match(T.soldPrice);
+      if (!m && r.classList.contains('won')) m = tx.match(T.bidPrice);
       const price = m && num(m[1]);
       if (!price) continue;
       const id = itemIdent(r), sig = `${id.name}|${id.rating}|${price}`;
@@ -412,11 +458,12 @@
     const tileEl = () => {
       const known = [...document.querySelectorAll('.ut-tile-transfer-list, [class*="tile-transfer-list"]')].find(vis);
       if (known) return known;
-      const t = leavesWithText('Lista de Transferências')[0] || find(/^Lista de Transfer[êe]ncias$/i, { buttonsFirst: false });
+      const t = leavesWithText(T.transferList)[0] || find(T.transferList, { buttonsFirst: false });
       return t ? (t.closest('.tile, [class*="tile"], button, [role=button]') || t) : null;
     };
     for (let tries = 0; tries < 3 && !tileEl(); tries++) {
-      const nav = navBtn(/^Transfer/i) || leavesWithText('Transfer.')[0] || find(/^Transfer\.?$/i);
+      const nav = [...document.querySelectorAll('.ut-tab-bar-item.icon-transfer')].find(vis)
+        || navBtn(/^(Transfer|Fichajes)/i) || leavesWithText(T.transfersNav)[0] || find(T.transfersNav);
       if (!nav) throw new Error('não achei o menu "Transfer." na barra lateral');
       log(`   abrindo Transfer.${tries ? ' (de novo)' : ''}…`);
       click(nav.closest('.ut-tab-bar-item, button, [role=button], a') || nav);
@@ -431,7 +478,7 @@
       const t = tileEl() || tile;
       click(t);
       if (await waitFor(onTransferList, 8000)) break;
-      const title = t.querySelector && [...t.querySelectorAll('*')].find(e => /^Lista de Transfer[êe]ncias$/i.test(norm(e.textContent)) && !e.children.length);
+      const title = t.querySelector && [...t.querySelectorAll('*')].find(e => T.transferList.test(norm(e.textContent)) && !e.children.length);
       if (title) { click(title); if (await waitFor(onTransferList, 6000)) break; }
     }
     await waitFor(() => onTransferList() && !loading(), 20000, 'a Lista de Transferências abrir');
@@ -439,7 +486,7 @@
   }
   async function confirmIfAsked() {
     const dlg = await waitFor(() => [...document.querySelectorAll('.ea-dialog-view, .view-modal-container, .ut-dialog')].filter(vis).pop(), 2000);
-    const ok = dlg && find(/^(Ok|Sim|Confirmar|Yes)$/i, { root: dlg });
+    const ok = dlg && find(T.okYes, { root: dlg });
     if (ok) { click(ok); await pause(); }
   }
   // registra vendas, clica "Retirar vendidos" e depois "Envie não duplicado para o clube"
@@ -451,15 +498,15 @@
     await waitFor(() => { counts = soldCounts(); const sg = JSON.stringify(counts); const okk = sg === prev; prev = sg; return okk; }, 8000);
     const n = applySales(counts);
     const sold = Object.values(counts).reduce((a, b) => a + b, 0);
-    const clear = find(/^Retirar vendidos$/i);
+    const clear = find(T.clearSold);
     if (clear) {
       click(clear); await pause(); await confirmIfAsked();
-      await waitFor(() => !find(/^Retirar vendidos$/i) || !soldCounts() || !Object.keys(soldCounts()).length, 10000);
+      await waitFor(() => !find(T.clearSold) || !soldCounts() || !Object.keys(soldCounts()).length, 10000);
       data.soldSeen = {}; saveData();
       log(`   retirei ${sold} vendido(s)${n ? `, ${n} registrado(s) no lucro` : ''}.`, 'good');
     } else log('   nenhum item vendido para retirar.');
     await pause();
-    const send = find(/^Envie n[ãa]o duplicados? para o clube$/i) || find(/^Enviar n[ãa]o duplicados? (para o|ao) clube$/i);
+    const send = find(T.sendNonDup);
     if (send) {
       click(send); await pause(); await confirmIfAsked();
       log('   enviei os não repetidos para o clube.', 'good');
@@ -473,12 +520,13 @@
       const headerTitle = () => norm(([...document.querySelectorAll('.ut-navigation-bar-view .title, .ut-navigation-bar-view h1')].find(vis) || {}).textContent);
       const galleryEntry = () => {
         if (/^Paletools$/i.test(headerTitle())) return null;   // nunca usa o "Gallery" das configurações
-        const t = [...leavesWithText('Gallery'), ...leavesWithText('Galeria')].find(e => !e.closest('.ut-navigation-bar-view'));
+        const t = leavesWithText(T.gallery).find(e => !e.closest('.ut-navigation-bar-view'));
         return t ? (t.closest('.tile, [class*="tile"], button, [role=button], a') || t) : null;
       };
       for (let tries = 0; tries < 3 && !readGallery(); tries++) {
         if (!galleryEntry()) {
-          const home = navBtn(/^In[íi]cio$/i) || leavesWithText('Início')[0] || find(/^In[íi]cio$/i);
+          const home = [...document.querySelectorAll('.ut-tab-bar-item.icon-home')].find(vis)
+            || navBtn(T.home) || leavesWithText(T.home)[0] || find(T.home);
           if (!home) throw new Stop('Não achei o menu Início. Abra a galeria e clique em Iniciar de novo.');
           log(`   voltando para Início${tries ? ' (de novo)' : ''}…`);
           click(home.closest('.ut-tab-bar-item, button, [role=button], a') || home);
@@ -510,11 +558,12 @@
   const ownText = e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim();
   // nome do time pela frase "Requires 15 Al Fayha Men players to complete."
   const setFromRequires = () => { const m = pageText().match(/Requires\s+\d+\s+(.+?)\s+(?:Mens?|Womens?|Men's|Women's)?\s*players/i); return m ? norm(m[1]) : null; };
-  // elementos cujo texto direto é exatamente txt (percorre só os nós de texto: rápido)
+  // elementos cujo texto direto é exatamente txt, ou bate com a regex txt (percorre só os nós de texto: rápido)
   const leavesWithText = txt => {
     const out = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const match = txt instanceof RegExp ? s => txt.test(s) : s => s === txt;
     for (let n; (n = w.nextNode());) {
-      if (norm(n.textContent) !== txt) continue;
+      if (!match(norm(n.textContent))) continue;
       const e = n.parentElement;
       if (e && !out.includes(e) && vis(e)) out.push(e);
     }
