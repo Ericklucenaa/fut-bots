@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FUT Galeria Bot",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Compra as cartas que faltam numa galeria do Paletools (até um preço máximo) e lista no mais barato.",
   "content_scripts": [
     {
@@ -27,6 +27,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "FUT Galeria Bot"
+    "default_title": "FUT Galeria Bot",
+    "default_popup": "popup.html"
   }
 }
