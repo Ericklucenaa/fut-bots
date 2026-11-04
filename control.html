@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FUT Bots</title>
+<link rel="stylesheet" href="control.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-snipe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></symbol>
+    <symbol id="i-market" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+    <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/></symbol>
+    <symbol id="i-gal" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></symbol>
+    <symbol id="i-rel" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.7-4.3L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.7 4.3L20 16"/><path d="M20 20.5V16h-4.5"/></symbol>
+    <symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/></symbol>
+    <symbol id="i-hist" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-set" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/></symbol>
+    <symbol id="i-club" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/></symbol>
+    <symbol id="i-tl" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+    <symbol id="i-keep" viewBox="0 0 24 24"><path d="M3 13.5h5l1.5 3h5l1.5-3h5"/><path d="M5.5 5h13L21 13.5V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5.5z"/></symbol>
+    <symbol id="i-sell" viewBox="0 0 24 24"><path d="M20.5 12.5 12.5 20.5a1.4 1.4 0 0 1-2 0L3 13V3h10l7.5 7.5a1.4 1.4 0 0 1 0 2z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="mark">FB</span><div><b>FUT Bots</b><small id="ver">v2</small></div></div>
+    <nav id="nav">
+      <button data-page="home" class="on"><svg><use href="#i-home"/></svg>Início</button>
+      <div class="navsep">Snipe</div>
+      <button data-page="sniper"><svg><use href="#i-snipe"/></svg>Sniper</button>
+      <button data-page="mkt"><svg><use href="#i-market"/></svg>Mercado</button>
+      <button data-page="strat"><svg><use href="#i-layers"/></svg>Estratégias</button>
+      <button data-page="sim"><svg><use href="#i-calc"/></svg>Simulador</button>
+      <div class="navsep">Paletools</div>
+      <button data-page="gal"><svg><use href="#i-gal"/></svg>Galeria</button>
+      <button data-page="rel"><svg><use href="#i-rel"/></svg>Relist</button>
+      <div class="navsep">Geral</div>
+      <button data-page="dash"><svg><use href="#i-dash"/></svg>Dashboard</button>
+      <button data-page="hist"><svg><use href="#i-hist"/></svg>Histórico</button>
+      <button data-page="settings"><svg><use href="#i-set"/></svg>Configurações</button>
+      <button data-page="docs"><svg><use href="#i-doc"/></svg>Como usar</button>
+    </nav>
+    <div class="flex"></div>
+    <div class="support">
+      <b>Grátis e de código aberto</b>
+      <span>Se o FUT Bots te ajuda, um café ajuda o projeto a continuar.</span>
+      <a class="kofi" id="kofi" target="_blank" rel="noopener noreferrer"><svg><use href="#i-heart"/></svg>Apoiar no Ko-fi</a>
+      <a class="repo" id="repo" target="_blank" rel="noopener noreferrer">Código-fonte no GitHub</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="conn" id="conn"><span class="dot"></span><span id="connT">procurando o Web App…</span></div>
+      <button class="btn ghost sm" id="openWA" hidden>Abrir Web App</button>
+      <div class="runbox" id="runbox" hidden><span class="pulse"></span><span id="runT"></span><button class="btn sm" id="runStop"><svg><use href="#i-stop"/></svg>Parar</button></div>
+      <div class="flex"></div>
+      <div class="hstat"><small>Moedas</small><b id="hCoins">–</b></div>
+      <div class="hstat"><small>Lucro hoje</small><b id="hProfit">0</b></div>
+      <div class="hstat"><small>Buscas 24 h</small><b id="hReq">0</b></div>
+      <div class="hstat"><small>Risco</small><b id="hRisk">Baixo</b></div>
+    </header>
+
+    <section class="page on" id="p-home"></section>
+
+    <!-- SNIPER -->
+    <section class="page" id="p-sniper">
+      <div class="ph"><div><h2>Sniper</h2><p>Repete a busca do Mercado com o seu filtro e compra no Comprar já tudo o que aparecer até o seu preço.</p></div></div>
+      <div class="cols">
+        <div class="colmain">
+          <div class="card">
+            <div class="ch"><div><h3>Filtro</h3><p>Monte aqui ou copie o que estiver na tela de busca do Web App.</p></div>
+              <div class="acts">
+                <button class="btn sm" id="fRead" title="Lê as caixas de filtro do Web App (abra Pesquisar no Mercado, de jogadores ou consumíveis)">Ler do Web App</button>
+                <button class="btn sm" id="fCapture" title="Copia o que está selecionado no Web App agora">Copiar da tela</button>
+                <button class="btn sm" id="fClear">Limpar</button>
+                <button class="btn sm acc" id="fApply">Aplicar no Web App</button>
+              </div>
+            </div>
+            <div class="player">
+              <input type="text" id="pName" placeholder="Jogador (deixe vazio para qualquer um)">
+              <button class="btn" id="pSearch">Buscar</button>
+            </div>
+            <div class="sugg" id="pSugg"></div>
+            <div class="fgrid" id="fGrid"></div>
+            <div class="row">
+              <input type="text" id="fName" placeholder="Nome do filtro (ex.: Ouros raros Premier League)" maxlength="40">
+              <button class="btn" id="fSave">Salvar filtro</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div><h3>Oferta</h3><p>Até quanto o bot paga por carta.</p></div>
+              <div class="seg" id="segMode"><button data-v="price">Por preço</button><button data-v="profit">% de lucro</button></div>
+            </div>
+            <div class="two">
+              <div class="field"><label>Valor mínimo do filtro <i title="Comprar já mín. da busca (0 = qualquer)">?</i></label>
+                <div class="stepper"><button data-step="minBuy" data-d="-1">−</button><input type="number" id="minBuy"><button data-step="minBuy" data-d="1">+</button></div></div>
+              <div class="field" id="fOffer"><label>Valor de oferta <i title="Comprar já máx.: o bot nunca compra acima disso">?</i></label>
+                <div class="stepper big"><button data-step="maxBuy" data-d="-1">−</button><input type="number" id="maxBuy"><button data-step="maxBuy" data-d="1">+</button></div></div>
+              <div class="field" id="fProfit"><label>Lucro desejado (%)</label><input type="number" id="profitPct" min="1" max="300"></div>
+              <div class="field" id="fRecheck"><label>Reconferir o mercado a cada (min)</label><input type="number" id="recheckMin" min="2"></div>
+            </div>
+            <div class="toggles">
+              <label class="tg"><input type="checkbox" id="rotate"><span></span>Variar o valor mínimo <small>evita o cache de buscas iguais</small></label>
+              <label class="tg" id="tgFilterMax"><input type="checkbox" id="useFilterMax"><span></span>Usar o máximo digitado no Web App</label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div><h3>Depois de comprar</h3><p>Para onde a carta vai.</p></div></div>
+            <div class="dests" id="dests"></div>
+            <div id="sellBox" class="sellbox">
+              <div class="field"><label>Como vender</label><div class="seg" id="sellHow"></div></div>
+              <div class="two">
+                <div class="field" id="fSellPrice"><label>Preço de venda (Comprar já) <i title="No modo % de lucro, 0 = vende pelo preço de mercado">?</i></label>
+                  <div class="stepper"><button data-step="sellPrice" data-d="-1">−</button><input type="number" id="sellPrice"><button data-step="sellPrice" data-d="1">+</button></div></div>
+                <div class="field" id="fSellPct"><label>Lucro sobre o que paguei (%) <i title="Já desconta os 5% do EA. Ex.: pagou 1.000 com 10% → anuncia por 1.200">?</i></label>
+                  <input type="number" id="sellPct" min="1" max="300"></div>
+              </div>
+              <div class="sellhint" id="sellHint"></div>
+              <label class="tg" id="tgNoLoss"><input type="checkbox" id="noLoss"><span></span>Não vender com prejuízo <small>se o preço − 5% do EA não cobrir o que paguei, usa o plano B</small></label>
+            </div>
+            <div class="field fb"><label>Se não der certo <i title="Repetida no clube, lista cheia, venda com prejuízo ou botão que não apareceu">?</i></label><select id="fallback"></select></div>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div><h3>Ritmo e limites</h3><p>Quanto o bot busca, por quanto tempo e quando descansa.</p></div><select id="preset" title="Carregar uma estratégia"></select></div>
+            <div class="three">
+              <div class="field"><label>Limite de compras <i title="0 = sem limite">?</i></label><input type="number" id="maxBuys" min="0"></div>
+              <div class="field"><label>Velocidade</label><select id="speed"></select></div>
+              <div class="field"><label>Rodar por</label><select id="runFor"></select></div>
+              <div class="field"><label>Máx. de moedas gastas <i title="0 = sem limite">?</i></label><input type="number" id="maxSpend" min="0" step="1000"></div>
+              <div class="field"><label>Limite de buscas em 24 h <i title="0 = sem limite">?</i></label><input type="number" id="dailyMax" min="0" step="100"></div>
+              <div class="field" id="fCustom"><label>Espera entre buscas (ms)</label><div class="pair"><input type="number" id="waitMin" min="200" step="50"><input type="number" id="waitMax" min="200" step="50"></div></div>
+            </div>
+            <div class="field"><label>Buscas por rodada <span class="badge">aleatório</span></label><div class="pills" id="tries"></div></div>
+            <div class="field"><label>Descanso entre rodadas <span class="badge">aleatório</span></label><div class="pills" id="rest"></div></div>
+          </div>
+        </div>
+
+        <div class="colside">
+          <div class="card">
+            <div class="ch"><h3>Risco</h3><button class="link" data-goto="dash">detalhes</button></div>
+            <div class="gauges">
+              <div class="gauge"><div class="ring" id="gReq"><b id="gReqV">0</b></div><small>Buscas 24 h</small><span id="gReqM">de 1.500</span></div>
+              <div class="gauge"><div class="ring" id="gMin"><b id="gMinV">0</b></div><small>Minutos</small><span id="gMinM">de 30</span></div>
+              <div class="gauge"><div class="ring" id="gRisk"><b id="gRiskV">Baixo</b></div><small>Risco</small><span id="gRiskM">–</span></div>
+            </div>
+            <div class="riskwhy" id="riskWhy"></div>
+          </div>
+          <div class="card">
+            <div class="ch"><h3>Filtros salvos</h3><label class="tg sm"><input type="checkbox" id="rotateFilters"><span></span>Alternar</label></div>
+            <div class="flist" id="flist"></div>
+          </div>
+          <div class="card logcard">
+            <div class="ch"><h3>Log do Snipe</h3><div class="acts"><button class="link" data-logdl="snipe">baixar</button><button class="link" data-logclr="snipe">limpar</button></div></div>
+            <div class="log" data-src="snipe"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="p-mkt"></section>
+    <section class="page" id="p-sim"></section>
+    <section class="page" id="p-strat"></section>
+    <section class="page" id="p-gal"></section>
+    <section class="page" id="p-rel"></section>
+    <section class="page" id="p-dash"></section>
+    <section class="page" id="p-hist"></section>
+    <section class="page" id="p-settings"></section>
+    <section class="page" id="p-docs"></section>
+
+    <!-- barra de baixo do Snipe -->
+    <footer class="bar" id="barSnipe" hidden>
+      <div class="bstat"><small>Compras</small><b id="bBought">0</b></div>
+      <div class="bstat"><small>Limite</small><b id="bLimit">1</b></div>
+      <div class="bstat"><small>Perdidas</small><b id="bLost">0</b></div>
+      <div class="bstat"><small>Gasto</small><b id="bSpent">0</b></div>
+      <div class="bstat"><small>Depois</small><b id="bSell">–</b></div>
+      <div class="bstat"><small>Velocidade</small><b id="bSpeed">Rápida</b></div>
+      <div class="seg run" id="segRun"><button data-v="test">Teste</button><button data-v="assist">Assistido</button><button data-v="real">Automático</button></div>
+      <button class="go" id="go">Snipar</button>
+    </footer>
+    <!-- barra de baixo da Galeria -->
+    <footer class="bar" id="barGal" hidden>
+      <div class="bstat"><small>Galeria</small><b id="gbSet">–</b></div>
+      <div class="bstat"><small>Faltam</small><b id="gbLeft">–</b></div>
+      <div class="bstat"><small>Compradas</small><b id="gbBought">0</b></div>
+      <div class="bstat"><small>Gasto</small><b id="gbSpent">0</b></div>
+      <div class="seg run" id="gSegRun"><button data-v="test">Teste</button><button data-v="real">Comprar de verdade</button></div>
+      <button class="go" id="gGo">Iniciar</button>
+    </footer>
+    <!-- barra de baixo do Relist -->
+    <footer class="bar" id="barRel" hidden>
+      <div class="bstat"><small>Listados</small><b id="rbListed">0</b></div>
+      <div class="bstat"><small>Tentados</small><b id="rbTotal">0</b></div>
+      <div class="bstat"><small>Mínimo</small><b id="rbMin">–</b></div>
+      <span class="flex"></span>
+      <button class="go" id="rGo">Relistar agora</button>
+    </footer>
+  </div>
+</div>
+
+<!-- confirmação do modo assistido -->
+<div class="modal" id="confirm" hidden>
+  <div class="mbox"><small>Oferta encontrada</small><b id="cName"></b><div class="cprice" id="cPrice"></div><span id="cLeft"></span>
+    <div class="row"><button class="btn" id="cNo">Pular</button><button class="go" id="cYes">Comprar</button></div></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="lib.js"></script>
+<script src="control.js"></script>
+<script src="control-mods.js"></script>
+</body>
+</html>

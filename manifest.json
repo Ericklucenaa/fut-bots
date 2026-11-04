@@ -1,16 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "FUT Galeria Bot",
-  "version": "1.2.2",
-  "description": "Compra as cartas que faltam numa galeria do Paletools (até um preço máximo) e lista no mais barato.",
+  "name": "FUT Bots",
+  "version": "2.0.0",
+  "description": "Snipe, Galeria e Relist para o EA FC Ultimate Team Web App, num painel só.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://www.ea.com/*"],
+  "background": { "service_worker": "bg.js" },
   "content_scripts": [
     {
-      "matches": [
-        "https://www.ea.com/*"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["https://www.ea.com/*"],
+      "js": ["lib.js", "core.js", "snipe.js", "galeria.js", "relist.js", "widget.js"],
       "run_at": "document_idle"
     }
   ],
@@ -27,7 +26,6 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "FUT Galeria Bot",
-    "default_popup": "popup.html"
+    "default_title": "Abrir o painel do FUT Bots"
   }
 }
