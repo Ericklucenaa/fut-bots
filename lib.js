@@ -1,6 +1,6 @@
 // Constantes e contas compartilhadas entre os motores no Web App e o painel de controle.
 var FSB = (() => {
-  const VERSION = '2.1.0';
+  const VERSION = '2.1.1';
   const DONATE_URL = 'https://ko-fi.com/ericklucena';
   const REPO_URL = 'https://github.com/Ericklucenaa/fut-bots';
   // módulos da extensão

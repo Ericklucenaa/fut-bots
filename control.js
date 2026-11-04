@@ -71,7 +71,7 @@ async function checkUpdate() {
       const r = await fetch('https://api.github.com/repos/Ericklucenaa/fut-bots/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
       if (!r.ok) return;
       const j = await r.json();
-      rel = { tag: String(j.tag_name || '').replace(/^v/, ''), url: j.html_url, zip: ((j.assets || []).find(a => /\.zip$/i.test(a.name)) || {}).browser_download_url || j.html_url };
+      rel = { tag: String(j.tag_name || '').replace(/^v/, ''), url: j.html_url, zip: ((j.assets || []).find(a => /\.zip$/i.test(a.name) && !/loja/i.test(a.name)) || {}).browser_download_url || j.html_url };
       try { localStorage.setItem('futbots_rel', JSON.stringify({ t: Date.now(), r: rel })); } catch {}
     } catch { return; }
   }
