@@ -2,7 +2,7 @@
 var FSB = (() => {
   const VERSION = '2.0.0';
   const DONATE_URL = 'https://ko-fi.com/ericklucena';
-  const REPO_URL = 'https://github.com/Ericklucenaa/fut-galeria-bot';
+  const REPO_URL = 'https://github.com/Ericklucenaa/fut-bots';
   // módulos da extensão
   const MODS = { snipe: { name: 'Snipe', hint: 'busca e compra no Comprar já' }, gal: { name: 'Galeria', hint: 'completa as galerias do Paletools' }, rel: { name: 'Relist', hint: 'relista a Lista de Transferências' } };
   // Galeria: compra as cartas que faltam e lista no mais barato

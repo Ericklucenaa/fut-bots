@@ -101,7 +101,7 @@ function renderHome(live) {
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const sb = st.events.filter(e => e.kind === 'bought' && e.t >= +t0).length, gb = st.galBuys.filter(b => b.t >= +t0).length;
   $('hmBuys').textContent = fmt(sb + gb); $('hmBuysS').textContent = `${sb} no Snipe · ${gb} na Galeria`;
-  const r = riskLevel(st.reqs, st.events); $('hmReq').textContent = fmt(r.d); $('hmRisk').innerHTML = `risco <span class="${r.c}">${r.t.toLowerCase()}</span>`;
+  const r = riskLevel(st.reqs, st.events); $('hmReq').textContent = fmt(r.d); $('hmRisk').innerHTML = `risco <strong style="font-weight:600" class="${r.c}">${r.t.toLowerCase()}</strong>`;
   for (const m of ['snipe', 'gal', 'rel']) {
     const card = $('mc-' + m), btn = card.querySelector('[data-run]');
     card.classList.toggle('live', o === m);

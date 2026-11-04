@@ -10,6 +10,16 @@ Extensão **gratuita e de código aberto** para o Chrome com três ferramentas p
 
 O painel também tem dashboard de lucro e banca, histórico, gráfico de preços por filtro, simulador de lucro, estratégias prontas e 10 temas.
 
+![Painel do FUT Bots: tela Início](docs/inicio.png)
+
+<table><tr>
+<td><img src="docs/sniper.png" alt="Sniper: filtro, oferta e destino da carta"></td>
+<td><img src="docs/galeria.png" alt="Galeria: progresso do time e regras"></td>
+<td><img src="docs/temas.png" alt="Configurações: 10 temas"></td>
+</tr><tr><td align="center">Sniper</td><td align="center">Galeria</td><td align="center">Temas</td></tr></table>
+
+<sub>Imagens com dados de exemplo.</sub>
+
 > ⚠️ **Aviso importante:** a EA proíbe automação no Web App. Usar esta extensão pode levar a restrições no mercado ou até ao banimento da sua conta. Use com moderação e **por sua conta e risco**. Este projeto não tem nenhuma ligação com a EA nem com o Paletools.
 
 ---
@@ -24,7 +34,7 @@ O painel também tem dashboard de lucro e banca, histórico, gráfico de preços
 
 ## Passo 1: instalar
 
-1. **Baixe:** clique no botão verde **Code** no topo desta página e depois em **Download ZIP**.
+1. **Baixe:** pegue o arquivo `fut-bots-v2.0.0.zip` na [última versão](../../releases/latest) (ou clique em **Code → Download ZIP** no topo desta página).
 2. **Extraia o ZIP** (botão direito → **Extrair tudo**) e guarde a pasta num lugar fixo, como `Documentos`. **Se apagar ou mover a pasta, a extensão para de funcionar.**
 3. Abra `chrome://extensions`, ligue o **Modo do desenvolvedor** (canto superior direito) e clique em **Carregar sem compactação**.
 4. Selecione a pasta extraída (a que tem o `manifest.json` dentro).
@@ -119,7 +129,7 @@ No painel → **Relist**, escolha o que relistar (expirados, não listados), o p
 
 ## Como atualizar
 
-1. Baixe a versão nova (**Code → Download ZIP**) e extraia.
+1. Baixe a versão nova na página de [versões](../../releases) e extraia.
 2. Substitua os arquivos da pasta antiga pelos novos.
 3. Em `chrome://extensions`, clique no ↻ do FUT Bots e recarregue o Web App.
 
