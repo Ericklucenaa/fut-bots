@@ -25,7 +25,9 @@ svg:has(use){width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stro
 /* menu lateral */
 .side{background:var(--bg1);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px 14px;gap:18px;overflow:auto}
 .brand{display:flex;align-items:center;gap:11px;padding:0 6px}
-.mark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--a1);color:var(--on);font:800 14px/1 var(--disp);letter-spacing:-.5px}
+.mark{width:36px;height:36px;border-radius:9px;display:block}
+.upd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 24px;background:color-mix(in srgb,var(--a1) 10%,var(--bg1));border-bottom:1px solid color-mix(in srgb,var(--a1) 35%,var(--line));font-size:13px}
+.upd b{font-weight:600}.upd .mut{flex:1;min-width:240px}
 .brand b{display:block;font:700 16px/1.2 var(--disp);letter-spacing:-.1px}.brand small{color:var(--mut);font-size:11.5px}
 nav{display:grid;gap:1px}
 nav button{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:8px;color:var(--tx2);text-align:left;font-weight:500;position:relative}

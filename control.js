@@ -57,8 +57,32 @@ setInterval(poll, 600);
 // ---------- carregar ----------
 store.get(null, r => {
   for (const k of Object.keys(st)) if (r[k] !== undefined) st[k] = FIX[k] ? FIX[k](r[k]) : r[k];
-  setTheme(); buildStatic(); renderAll(); poll();
+  setTheme(); buildStatic(); renderAll(); poll(); checkUpdate();
 });
+
+// ---------- versão nova (só para quem instalou pelo GitHub; a Chrome Web Store atualiza sozinha) ----------
+const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+async function checkUpdate() {
+  if (chrome.runtime.getManifest().update_url) return;
+  let rel = null;
+  try { const c = JSON.parse(localStorage.getItem('futbots_rel') || 'null'); if (c && Date.now() - c.t < 6 * 36e5) rel = c.r; } catch {}
+  if (!rel) {
+    try {
+      const r = await fetch('https://api.github.com/repos/Ericklucenaa/fut-bots/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
+      if (!r.ok) return;
+      const j = await r.json();
+      rel = { tag: String(j.tag_name || '').replace(/^v/, ''), url: j.html_url, zip: ((j.assets || []).find(a => /\.zip$/i.test(a.name)) || {}).browser_download_url || j.html_url };
+      try { localStorage.setItem('futbots_rel', JSON.stringify({ t: Date.now(), r: rel })); } catch {}
+    } catch { return; }
+  }
+  const cur = chrome.runtime.getManifest().version;
+  if (!rel.tag || !newer(rel.tag, cur)) return;
+  const u = $('upd');
+  u.innerHTML = `<b>Versão ${esc(rel.tag)} disponível</b><span class="mut">Você está na ${esc(cur)}. Baixe o ZIP, extraia por cima da pasta atual da extensão (substituindo os arquivos) e clique em Recarregar. Suas configurações são mantidas.</span>
+    <a class="btn sm" href="${esc(rel.url)}" target="_blank" rel="noopener noreferrer">O que mudou</a><a class="btn sm acc" href="${esc(rel.zip)}" target="_blank" rel="noopener noreferrer">Baixar</a><button class="btn sm" id="updReload">Recarregar</button>`;
+  u.hidden = false;
+  $('updReload').onclick = () => chrome.runtime.reload();
+}
 chrome.storage.onChanged.addListener((ch, area) => {
   if (area !== 'local') return;
   for (const [k, v] of Object.entries(ch)) if (k in st) st[k] = FIX[k] ? FIX[k](v.newValue) : v.newValue ?? (Array.isArray(st[k]) ? [] : k === 'schema' ? null : {});
@@ -468,7 +492,7 @@ function renderPage() {
       <div class="ph"><div><h2>Dashboard</h2><p>Banca, lucro e saúde da conta somando os módulos.</p></div><span class="flex"></span>${periodSel()}</div>
       <div class="grid">
         <div class="tiles">
-          <div class="tile"><small>Moedas agora</small><b>${fmt(c)}</b><span>${bankD == null ? 'banca sem histórico ainda' : `no período: <b class="${bankD >= 0 ? 'good' : 'bad'}">${bankD >= 0 ? '+' : ''}${fmt(bankD)}</b>`}</span></div>
+          <div class="tile"><small>Moedas agora</small><b>${fmt(c)}</b><span>${bankD == null ? 'banca sem histórico ainda' : `no período: <strong style="font-weight:600" class="${bankD >= 0 ? 'good' : 'bad'}">${bankD >= 0 ? '+' : ''}${fmt(bankD)}</strong>`}</span></div>
           <div class="tile"><small>Snipe · lucro estimado</small><b class="${s.profit >= 0 ? 'good' : 'bad'}">${fmt(s.profit)}</b><span>no preço anunciado, já sem os 5%</span></div>
           <div class="tile"><small>Snipe · ROI</small><b>${pct(s.roi)}</b><span>${fmt(s.bought.length)} compras · ${fmt(s.spent)} gastas</span></div>
           <div class="tile"><small>Snipe · acerto</small><b>${pct(s.hit)}</b><span>${s.lost.length} perdida(s) para outros</span></div>

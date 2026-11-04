@@ -1,3 +1,5 @@
+<img src="docs/icone.png" alt="" width="96" align="right">
+
 # FUT Bots
 
 Extensão **gratuita e de código aberto** para o Chrome com três ferramentas para o **EA FC Ultimate Team Web App**, controladas por um painel só:
@@ -34,7 +36,7 @@ O painel também tem dashboard de lucro e banca, histórico, gráfico de preços
 
 ## Passo 1: instalar
 
-1. **Baixe:** pegue o arquivo `fut-bots-v2.0.0.zip` na [última versão](../../releases/latest) (ou clique em **Code → Download ZIP** no topo desta página).
+1. **Baixe:** pegue o arquivo `fut-bots-v….zip` na [última versão](../../releases/latest) (ou clique em **Code → Download ZIP** no topo desta página).
 2. **Extraia o ZIP** (botão direito → **Extrair tudo**) e guarde a pasta num lugar fixo, como `Documentos`. **Se apagar ou mover a pasta, a extensão para de funcionar.**
 3. Abra `chrome://extensions`, ligue o **Modo do desenvolvedor** (canto superior direito) e clique em **Carregar sem compactação**.
 4. Selecione a pasta extraída (a que tem o `manifest.json` dentro).
@@ -129,11 +131,15 @@ No painel → **Relist**, escolha o que relistar (expirados, não listados), o p
 
 ## Como atualizar
 
-1. Baixe a versão nova na página de [versões](../../releases) e extraia.
-2. Substitua os arquivos da pasta antiga pelos novos.
-3. Em `chrome://extensions`, clique no ↻ do FUT Bots e recarregue o Web App.
+Quando sai uma versão nova, o painel mostra uma faixa **"Versão X disponível"** com os botões **Baixar** e **Recarregar**:
 
-Suas configurações e históricos são mantidos.
+1. Clique em **Baixar** e extraia o ZIP.
+2. Copie os arquivos da pasta nova por cima da pasta atual da extensão, substituindo tudo.
+3. Clique em **Recarregar** na faixa (ou no ↻ do FUT Bots em `chrome://extensions`) e aperte F5 no Web App.
+
+Suas configurações e históricos são mantidos, porque ficam guardados no Chrome e não na pasta.
+
+> Quando o FUT Bots estiver na **Chrome Web Store**, quem instalar por lá recebe as versões novas sozinho.
 
 ---
 
@@ -158,6 +164,10 @@ A doação é opcional e não libera nenhuma função extra.
 | `lib.js` | Constantes e contas compartilhadas (escada de preços, temas, estratégias). |
 
 Se a EA mudar algum texto ou você quiser adicionar outro idioma, ajuste o dicionário `T` no `core.js`. Achou um bug ou tem uma ideia? Abra uma [issue](../../issues) ou mande um *pull request*.
+
+## Privacidade
+
+Tudo fica no seu computador: a extensão não coleta nem envia seus dados. Veja a [política de privacidade](PRIVACIDADE.md).
 
 ## Licença
 

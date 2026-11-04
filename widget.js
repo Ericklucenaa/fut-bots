@@ -19,7 +19,7 @@
   .w{font:12.5px/1.35 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;color:var(--tx);background:color-mix(in srgb,var(--bg1) 94%,transparent);
      border:1px solid var(--line2);border-radius:12px;box-shadow:0 14px 36px #0009;width:292px;backdrop-filter:blur(8px);overflow:hidden}
   .top{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 11px;cursor:move;user-select:none;border-bottom:1px solid var(--line)}
-  .mark{width:20px;height:20px;border-radius:6px;background:var(--a1);color:var(--on);display:grid;place-items:center;font:800 10.5px/1 "Segoe UI Variable Display","Segoe UI",sans-serif;letter-spacing:-.3px}
+  .mark{width:20px;height:20px;border-radius:5px;display:block}
   .top b{flex:1;font-size:12.5px;letter-spacing:.1px}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--mut)}.dot.on{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 25%,transparent)}.dot.test{background:var(--warn)}
   button{font:inherit;color:inherit;border:0;cursor:pointer;border-radius:7px;padding:5px 9px;background:var(--bg3)}
@@ -43,7 +43,7 @@
   .min .body{display:none}.min .top{border-bottom:0}.min .w{width:auto}
 </style>
 <div class="w" id="w">
-  <div class="top" id="drag"><span class="mark">FB</span><b id="title">FUT Bots</b><span class="dot" id="dot"></span>
+  <div class="top" id="drag"><img class="mark" src="${chrome.runtime.getURL('icons/icon32.png')}" alt=""><b id="title">FUT Bots</b><span class="dot" id="dot"></span>
     <button class="ic" id="open" title="Abrir o painel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button>
     <button class="ic" id="min" title="Minimizar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 12h12"/></svg></button></div>
   <div class="body">
