@@ -9,6 +9,7 @@ Extensão **gratuita e de código aberto** para o Chrome com três ferramentas p
 | **Sniper** | Repete a busca do Mercado com o seu filtro e compra no **Comprar já** tudo o que aparecer até o seu preço. Depois manda a carta para o clube ou para a Lista de Transferências, deixa nos não atribuídos ou vende. |
 | **Galeria** | Completa as galerias do **Paletools**: compra as cartas que faltam (até o seu preço), lista no mais barato e passa para o próximo time. |
 | **Relist** | Abre a Lista de Transferências, retira os vendidos e anuncia de novo os expirados e os não listados pelo "Mais barato". |
+| **Ferramentas** | Organiza os não atribuídos, envia os não repetidos da Lista de Transferências ao clube, retira os vendidos registrando o lucro, resgata recompensas e protege cartas que você nunca quer vender. |
 
 O painel também tem dashboard de lucro e banca, histórico, gráfico de preços por filtro, simulador de lucro, estratégias prontas, 10 temas e 3 idiomas (**português, inglês e espanhol**, no seletor PT / EN / ES do topo).
 
@@ -29,7 +30,7 @@ O painel também tem dashboard de lucro e banca, histórico, gráfico de preços
 ## O que você precisa
 
 - **Google Chrome** no computador (também funciona no Edge, Brave, Opera e outros baseados em Chromium)
-- **Paletools** instalado e funcionando no Web App (a Galeria e a venda no "Mais barato" usam ele)
+- **Paletools** só para a **Galeria** (a tela Gallery é dele). O Sniper, o Relist e as Ferramentas funcionam sem ele: o menor preço do mercado é calculado pela própria extensão.
 - Web App em **português, inglês ou espanhol** (o painel é em português)
 
 ---
@@ -109,12 +110,22 @@ No painel → **Relist**, escolha o que relistar (expirados, não listados), o p
 
 ---
 
+## Ferramentas
+
+No painel → **Ferramentas**:
+- **Não atribuídos:** não repetidos vão para o clube; repetidos vão para a Lista de transf., à venda no mais barato ou ficam.
+- **Lista de Transferências:** enviar os não repetidos ao clube e retirar os vendidos (registrando o lucro real, inclusive das cartas do Sniper).
+- **Recompensas:** resgata o que estiver disponível na tela e em Objetivos (experimental).
+- **Proteção:** nomes que nunca são vendidos nem relistados.
+
+**Atalhos no Web App:** Alt+Shift+S (Snipe), Alt+Shift+G (Galeria), Alt+Shift+R (Relist), Alt+Shift+X (parar tudo); no modo assistido, Enter compra e Esc pula.
+
 ## Os módulos param sozinhos quando
 
 - aparece um **captcha** (resolva e inicie de novo);
 - as **moedas acabam** ou um limite seu é atingido (gasto, compras, tempo, buscas por dia);
 - os **não atribuídos** enchem;
-- a EA **limita o mercado** (o Sniper pausa antes; a Galeria e o Relist param).
+- a EA **limita o mercado** três vezes em 15 minutos (no primeiro e no segundo aviso, qualquer módulo pausa alguns minutos e continua).
 
 ---
 

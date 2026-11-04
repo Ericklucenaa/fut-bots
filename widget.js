@@ -47,7 +47,7 @@
     <button class="ic" id="open" title="Abrir o painel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button>
     <button class="ic" id="min" title="Minimizar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 12h12"/></svg></button></div>
   <div class="body">
-    <div class="seg" id="seg">${Object.entries(MODS).map(([k, m]) => `<button data-m="${k}">${m.name}</button>`).join('')}</div>
+    <div class="seg" id="seg">${['snipe', 'gal', 'rel'].map(k => `<button data-m="${k}">${MODS[k].name}</button>`).join('')}</div>
     <div class="row"><div class="k" id="k"></div><button class="go" id="go">Iniciar</button></div>
     <div class="cf" id="cf" hidden><span id="cfT"></span><button class="yes" id="cfY">Comprar</button><button id="cfN">Pular</button></div>
     <div class="last" id="last">pronto</div>
@@ -82,7 +82,7 @@
     $('cf').hidden = !p;
     if (p) $('cfT').textContent = `${p.name} · ${fmt(p.price)} · ${p.left}s`;
     const L = D.logs, l = L[L.length - 1];
-    const line = (o === 'snipe' && s.snipe.S.last) || (o === 'gal' && s.gal.G.line) || (o === 'rel' && s.rel.R.line) || '';
+    const line = (o === 'snipe' && s.snipe.S.last) || (o === 'gal' && s.gal.G.line) || (o === 'rel' && s.rel.R.line) || (o === 'tools' && `${tr('Ferramentas')}: ${tr(F.run.what)}${s.tools && s.tools.R.line ? ' · ' + s.tools.R.line : ''}`) || '';
     $('last').textContent = line ? tr(line) : (l ? I18N.trLog(l.m) : tr('pronto'));
     $('last').className = 'last ' + (line ? '' : (l && l.c) || '');
   }
@@ -123,6 +123,25 @@
       try { const p = JSON.parse(localStorage.getItem(POS) || 'null'); if (p) { host.style.left = p.x; host.style.top = p.y; host.style.bottom = 'auto'; } } catch {}
     } else if (!active() && host.isConnected && !owner()) host.remove();
   }
+  // atalhos de teclado (Configurações → Atalhos): Alt+Shift+S/G/R inicia ou para · Alt+Shift+X para tudo · Enter/Esc no modo assistido
+  const KEYMOD = { KeyS: 'snipe', KeyG: 'gal', KeyR: 'rel' };
+  addEventListener('keydown', e => {
+    if (!D.cfg.keys || !active()) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    const st2 = F.status(), pend = st2.snipe && st2.snipe.pending;
+    if (pend && (e.key === 'Enter' || e.key === 'Escape') && !e.altKey && !e.ctrlKey) {
+      F.command({ mod: 'snipe', op: 'confirm', v: e.key === 'Enter' }); e.preventDefault(); e.stopPropagation(); return;
+    }
+    if (!e.altKey || !e.shiftKey || e.ctrlKey) return;
+    const m = KEYMOD[e.code];
+    if (e.code === 'KeyX') F.stop();
+    else if (m) {
+      if (owner() === m) F.stop();
+      else if (!owner()) { pick = m; try { localStorage.setItem(MOD, pick); } catch {} F.command({ mod: m, op: 'start' }).catch(err => F.log('⚠ ' + err.message, 'bad', m)); }
+    } else return;
+    e.preventDefault(); e.stopPropagation(); soon();
+  }, true);
   setInterval(mount, 1500); mount();
   F.onReady(render);
   setInterval(() => { try { if (host.isConnected) render(); } catch {} }, 1000);

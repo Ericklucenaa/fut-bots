@@ -6,7 +6,7 @@ Tudo o que o formulário da loja pede, pronto para copiar e colar.
 
 | O quê | Arquivo |
 | --- | --- |
-| Pacote da extensão | `fut-bots-v2.3.0-loja.zip` (anexado na release v2.2.0) |
+| Pacote da extensão | `fut-bots-v2.4.0-loja.zip` (anexado na release v2.2.0) |
 | Ícone da loja (128×128) | `icons/icon128.png` |
 | Capturas de tela (1280×800) | `store/1-inicio.png` … `store/5-temas.png` |
 | Bloco promocional pequeno (440×280) | `store/promo-440x280.png` |
@@ -93,7 +93,7 @@ Os módulos rodam dentro do EA FC Ultimate Team Web App (www.ea.com), lendo a te
 
 ## Passo a passo no painel do desenvolvedor
 
-1. https://chrome.google.com/webstore/devconsole → **Novo item** → envie `fut-bots-v2.3.0-loja.zip`.
+1. https://chrome.google.com/webstore/devconsole → **Novo item** → envie `fut-bots-v2.4.0-loja.zip`.
 2. **Ficha da loja:** cole nome, resumo e descrição; envie o ícone, as 5 capturas e os blocos promocionais; escolha a categoria e o idioma.
 3. **Práticas de privacidade:** cole a finalidade única e as justificativas, marque "sem código remoto" e as declarações de uso de dados, e cole o link da política de privacidade.
 4. **Distribuição:** Pública (ou "Não listada", para só quem tiver o link poder instalar), em todos os países.

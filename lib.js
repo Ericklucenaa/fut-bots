@@ -1,10 +1,10 @@
 // Constantes e contas compartilhadas entre os motores no Web App e o painel de controle.
 var FSB = (() => {
-  const VERSION = '2.3.0';
+  const VERSION = '2.4.0';
   const DONATE_URL = 'https://ko-fi.com/ericklucena';
   const REPO_URL = 'https://github.com/Ericklucenaa/fut-bots';
   // módulos da extensão
-  const MODS = { snipe: { name: 'Snipe', hint: 'busca e compra no Comprar já' }, gal: { name: 'Galeria', hint: 'completa as galerias do Paletools' }, rel: { name: 'Relist', hint: 'relista a Lista de Transferências' } };
+  const MODS = { snipe: { name: 'Snipe', hint: 'busca e compra no Comprar já' }, gal: { name: 'Galeria', hint: 'completa as galerias do Paletools' }, rel: { name: 'Relist', hint: 'relista a Lista de Transferências' }, tools: { name: 'Ferramentas', hint: 'organiza o clube e as listas' } };
   // Galeria: compra as cartas que faltam e lista no mais barato
   const GAL_DEF = { maxPrice: 4000, maxTotal: 0, qty: 5, autoQty: true, autoNext: true, maxSets: 0, respectSlots: true, list: true, minList: 0, cleanFull: true, cleanBetween: false, cleanEvery: 10, retries: 4, dryRun: true, delay: 900 };
   // Relist: relista expirados e não listados pelo mais barato
@@ -40,7 +40,7 @@ var FSB = (() => {
     keep:     { icon: '📥', name: 'Não atribuídos', hint: 'deixa onde está' },
     sell:     { icon: '💰', name: 'Vender', hint: 'anuncia no mercado' },
   };
-  const SELLHOW = { paletools: 'Mais barato (Paletools)', fixed: 'Preço fixo', margin: '% sobre o que paguei' };
+  const SELLHOW = { paletools: 'Mais barato', fixed: 'Preço fixo', margin: '% sobre o que paguei' };
   const FALLBACK = { keep: 'Deixar nos não atribuídos', transfer: 'Enviar para a Lista de transf.' };
   const AFTER = { ...SELLHOW, club: 'Enviar ao clube', keep: 'Guardar (não atribuídos)', transfer: 'Lista de transf.' };
   const destName = c => c.dest === 'sell' ? 'Vender · ' + (SELLHOW[c.sellHow] || '').split(' (')[0] : (DEST[c.dest] || DEST.keep).name;
@@ -68,6 +68,9 @@ var FSB = (() => {
     runFor: 30, tries: 30, rest: '30-120', dailyMax: 1500,
     rotateFilters: false, sound: true, run: 'real',   // run: test | assist | real
     preset: '', theme: 'brasa',
+    priceSrc: 'auto',              // menor preço: auto = Paletools se ativo, senão a extensão · own · paletools
+    uaClub: true, uaDup: 'tl',     // não atribuídos: não repetidos → clube · repetidos → tl | sell | keep
+    block: [], keys: true,         // nomes protegidos (nunca vender/relistar) · atalhos de teclado
   };
   // temas: dark = color-scheme; on = cor do texto em cima do degradê
   const T0 = { bg: '#0a0d13', bg1: '#10141c', bg2: '#161b26', bg3: '#1e2533', line: '#252d3c', line2: '#323c4f', tx: '#eef1f7', tx2: '#b9c1d1', mut: '#7f8aa1', good: '#3ee08f', warn: '#ffc548', bad: '#ff6b6b', tip: '#06080c', dark: true };

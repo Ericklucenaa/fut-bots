@@ -234,7 +234,14 @@
       const [name, rating, price] = k.split('|');
       for (let i = seen; i < c; i++) {
         const rec = D.galBuys.filter(b => (b.status === 'listed' || b.status === 'unlisted') && b.name === name && String(b.rating) === rating).sort((a, b) => a.t - b.t)[0];
-        if (!rec) continue;
+        if (!rec) {
+          const e = D.events.filter(x => x.kind === 'bought' && (x.mod || 'snipe') === 'snipe' && x.sale && !x.soldAt && x.name === name && String(x.rating) === rating).sort((a, b) => a.t - b.t)[0];
+          if (e) {
+            e.soldAt = Date.now(); e.realSale = +price; e.profit = net(+price) - e.price; e.real = true; F.persist('events');
+            F.log(`💰 Vendida: ${name} ${rating} por ${fmt(+price)} → ${e.profit >= 0 ? 'lucro' : 'prejuízo'} ${fmt(Math.abs(e.profit))} (já tirando 5% do EA).`, e.profit >= 0 ? 'good' : 'bad', 'snipe');
+          }
+          continue;
+        }
         rec.status = 'sold'; rec.sale = +price; rec.soldAt = Date.now(); n++;
         const pl = net(+price) - rec.buy;
         log(`💰 Vendida: ${name} ${rating} por ${fmt(+price)} → ${pl >= 0 ? 'lucro' : 'prejuízo'} ${fmt(Math.abs(pl))} (já tirando 5% do EA).`, pl >= 0 ? 'good' : 'bad');
@@ -254,6 +261,12 @@
     applySales(counts);
   }
   F.onReady(() => setInterval(() => { try { scanSales(); } catch {} }, 1500));
+  // antes de qualquer "Retirar vendidos" (Relist, Ferramentas): registra as vendas para o lucro real
+  F.hooks.beforeClearSold = async () => {
+    let prev = null, counts = {};
+    await F.waitFor(() => { counts = soldCounts(); const sg = JSON.stringify(counts); const ok = sg === prev; prev = sg; return ok; }, 6000, null, 300);
+    applySales(counts);
+  };
 
   // registra vendas, clica "Retirar vendidos" e depois "Envie não duplicado para o clube"
   async function cleanTransferList() {
@@ -425,6 +438,7 @@
           if (target > st.missingTiles) log(`   Atenção: só ${st.missingTiles} carta(s) faltando têm botão Mercado; pode não dar para completar.`, 'warn');
           let got = 0;
           while (got < target) {
+           try {
             if (F.stopping()) throw new Stop('Parado por você.');
             const left = cfg.maxTotal ? cfg.maxTotal - G.spent : Infinity;
             if (left <= 0) throw new Stop(`Chegou no limite total de ${fmt(cfg.maxTotal)} moedas. Gasto: ${fmt(G.spent)}.`);
@@ -469,6 +483,11 @@
             G.line = `${setName}: ${got}/${target} nesta galeria`; F.changed();
             await pause();
             await backToGallery();
+           } catch (e) {
+            if (!(e instanceof Limited)) throw e;
+            await F.limitPause(e, log);
+            await backToGallery().catch(err => { if (err instanceof Stop) throw err; });
+           }
           }
           if (got >= target) { G.completed++; log(`   ${setName}: ${got}/${target} ${cfg.dryRun ? 'simuladas' : 'compradas'} — completo.`, 'good'); }
           else log(`   ${setName}: ${cfg.dryRun ? 'simuladas' : 'compradas'} ${got} de ${target}; ficaram ${target - got} sem comprar (caras demais ou sem oferta).`, 'warn');

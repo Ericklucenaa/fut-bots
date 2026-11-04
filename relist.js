@@ -15,6 +15,7 @@
   // vendidos e anúncios ativos ficam de fora; entram os expirados e os itens disponíveis (sem anúncio)
   function isCandidate(r) {
     const t = r.innerText;
+    if (F.blocked(F.itemIdent(r).name)) return false;   // lista de proteção
     if (T.sold.test(t)) return false;
     if (T.expired.test(t)) return C().expired;
     if (T.onSale.test(t)) return false;   // ainda à venda
@@ -23,7 +24,7 @@
   async function relistItem(row) {
     click(row); await pause(0.8);
     if (!(await waitFor(() => F.fastFind(T.relist), 6000))) return { ok: false, why: 'não apareceu "Listar no Mercado de Transferências" / "Listar item novamente"' };
-    return F.listCheapest({ minBn: C().minPrice, accRe: T.relist });
+    return F.listCheapest({ minBn: C().minPrice, accRe: T.relist, reselect: async () => { click(row); await pause(0.8); } });
   }
 
   const R = { listed: 0, total: 0, line: '' };
@@ -49,7 +50,11 @@
         log(`→ ${name}: listando…`);
         let res;
         try { res = await relistItem(row); }
-        catch (e) { if (e instanceof Stop || e instanceof Limited) throw e; res = { ok: false, why: e.message }; }
+        catch (e) {
+          if (e instanceof Limited) { R.total--; await F.limitPause(e, log); await F.goToTransferList(log); continue; }
+          if (e instanceof Stop) throw e;
+          res = { ok: false, why: e.message };
+        }
         if (res.ok) { R.listed++; log(`   ✔ listado por ${fmt(res.bn)}.`, 'good'); }
         else {
           failed[name] = (failed[name] || 0) + 1;

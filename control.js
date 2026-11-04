@@ -219,7 +219,7 @@ function sync() {
   const mp = ladderUp(Math.ceil(ex * (1 + c.sellPct / 100) / 0.95));
   $('sellHint').innerHTML = c.sellHow === 'margin' ? L(`Ex.: comprou por <b>${fmt(ex)}</b> → anuncia por <b>${fmt(mp)}</b> (recebe ${fmt(net(mp))} depois dos 5% do EA).`, `E.g. bought for <b>${fmt(ex)}</b> → lists for <b>${fmt(mp)}</b> (you get ${fmt(net(mp))} after the EA 5% tax).`, `Ej.: compraste por <b>${fmt(ex)}</b> → publica por <b>${fmt(mp)}</b> (recibes ${fmt(net(mp))} después del 5% de EA).`)
     : c.sellHow === 'fixed' ? (c.sellPrice ? L(`Anuncia por <b>${fmt(c.sellPrice)}</b> e recebe <b>${fmt(net(c.sellPrice))}</b> depois dos 5% do EA.`, `Lists for <b>${fmt(c.sellPrice)}</b> and you get <b>${fmt(net(c.sellPrice))}</b> after the EA 5% tax.`, `Publica por <b>${fmt(c.sellPrice)}</b> y recibes <b>${fmt(net(c.sellPrice))}</b> después del 5% de EA.`) : (c.mode === 'profit' ? 'Preço 0 = vende pelo preço de mercado que o bot conferiu.' : '<span class="warn">Defina o preço de venda.</span>'))
-    : 'Usa o botão "Mais barato" do Paletools e anuncia logo abaixo do mais barato.';
+    : 'Anuncia logo abaixo do mais barato do mercado (pelo Paletools, se estiver ativo, ou pela busca da própria extensão).';
   $('bLimit').textContent = c.maxBuys ? fmt(c.maxBuys) : '∞';
   $('bSell').textContent = destName(c);
   $('bSpeed').textContent = (SPEEDS[c.speed] || {}).name || '';
@@ -259,7 +259,7 @@ function renderStatus() {
   $('runbox').hidden = !o;
   if (o) $('runT').textContent = `${tr((MODS[o] || {}).name || o)}: ${tr(status.what)}${status.since ? ` · ${Math.max(0, Math.floor((Date.now() - status.since) / 6e4))} min` : ''}${status.stopping ? ' · parando…' : ''}`;
   for (const b of $('nav').querySelectorAll('button')) {
-    const live = o && ((o === 'snipe' && b.dataset.page === 'sniper') || (o === 'gal' && b.dataset.page === 'gal') || (o === 'rel' && b.dataset.page === 'rel'));
+    const live = o && ((o === 'snipe' && b.dataset.page === 'sniper') || (o === 'gal' && b.dataset.page === 'gal') || (o === 'rel' && b.dataset.page === 'rel') || (o === 'tools' && b.dataset.page === 'tools'));
     let dot = b.querySelector('.live');
     if (live && !dot) b.insertAdjacentHTML('beforeend', '<span class="live"></span>');
     if (!live && dot) dot.remove();
@@ -290,7 +290,7 @@ function renderRisk() {
 // lucro de hoje: snipe (estimado no anúncio) + galeria (vendas confirmadas)
 function profitToday() {
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
-  const sn = st.events.filter(e => e.kind === 'bought' && e.t >= +t0 && e.profit != null).reduce((s, e) => s + e.profit, 0);
+  const sn = st.events.filter(e => e.kind === 'bought' && (e.real ? (e.soldAt || e.t) : e.t) >= +t0 && e.profit != null).reduce((s, e) => s + e.profit, 0);
   const gl = st.galBuys.filter(b => b.status === 'sold' && (b.soldAt || b.t) >= +t0).reduce((s, b) => s + net(b.sale) - b.buy, 0);
   return sn + gl;
 }
@@ -524,11 +524,13 @@ function renderPage() {
     for (const e of evs) if (['bought', 'dry', 'lost'].includes(e.kind)) (byF[e.filter || '—'] = byF[e.filter || '—'] || []).push(e);
     const cnt = k => evs.filter(e => e.kind === k).length;
     const gb = st.galBuys.filter(b => b.t >= from), gs = gb.filter(b => b.status === 'sold'), gpl = sum(gs, b => net(b.sale) - b.buy);
+    const realE = s.bought.filter(e => e.real), sReal = sum(realE, e => e.profit), sRealN = realE.length;
     el.innerHTML = `
       <div class="ph"><div><h2>Dashboard</h2><p>Banca, lucro e saúde da conta somando os módulos.</p></div><span class="flex"></span>${periodSel()}</div>
       <div class="grid">
         <div class="tiles">
           <div class="tile"><small>Moedas agora</small><b>${fmt(c)}</b><span>${bankD == null ? 'banca sem histórico ainda' : `no período: <strong style="font-weight:600" class="${bankD >= 0 ? 'good' : 'bad'}">${bankD >= 0 ? '+' : ''}${fmt(bankD)}</strong>`}</span></div>
+          <div class="tile"><small>Snipe · lucro realizado</small><b class="${sReal >= 0 ? 'good' : 'bad'}">${fmt(sReal)}</b><span>${sRealN ? `${sRealN} venda(s) confirmada(s)` : 'vendas entram ao abrir a Lista de Transf.'}</span></div>
           <div class="tile"><small>Snipe · lucro estimado</small><b class="${s.profit >= 0 ? 'good' : 'bad'}">${fmt(s.profit)}</b><span>no preço anunciado, já sem os 5%</span></div>
           <div class="tile"><small>Snipe · ROI</small><b>${pct(s.roi)}</b><span>${fmt(s.bought.length)} compras · ${fmt(s.spent)} gastas</span></div>
           <div class="tile"><small>Snipe · acerto</small><b>${pct(s.hit)}</b><span>${s.lost.length} perdida(s) para outros</span></div>

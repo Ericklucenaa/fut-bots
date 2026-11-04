@@ -307,6 +307,46 @@ PAGES.rel = () => {
   renderLog();
 };
 
+// ---------- FERRAMENTAS ----------
+PAGES.tools = () => {
+  const el = $('p-tools'), c = st.cfg, busyO = owner();
+  const dis = busyO ? 'disabled' : '';
+  el.innerHTML = `
+    <div class="ph"><div><h2>Ferramentas</h2><p>Ações de uma vez só para organizar o clube e as listas. Cada uma roda quando você clica.</p></div></div>
+    <div class="cols">
+      <div class="colmain">
+        <div class="card"><div class="ch"><div><h3>Não atribuídos</h3><p>Abre os não atribuídos e organiza item por item.</p></div><button class="btn acc" data-op="unassigned" ${dis}>Organizar agora</button></div>
+          <div class="opts">
+            <div class="opt"><div class="l"><b>Não repetidos vão para o clube</b><span>Cartas que você ainda não tem</span></div><label class="tg"><input type="checkbox" id="uaClub" ${c.uaClub ? 'checked' : ''}><span></span></label></div>
+            <div class="opt"><div class="l"><b>Repetidos</b><span>Cartas que já estão no clube</span></div>
+              <div class="seg" id="uaDup"><button data-v="tl">Lista de transf.</button><button data-v="sell">Vender no mais barato</button><button data-v="keep">Deixar</button></div></div>
+          </div>
+        </div>
+        <div class="card"><div class="ch"><div><h3>Lista de Transferências</h3><p>Ações rápidas na lista.</p></div></div>
+          <div class="row"><button class="btn" data-op="tlToClub" ${dis}>Enviar não repetidos ao clube</button><button class="btn" data-op="clearSold" ${dis}>Retirar vendidos (e registrar o lucro)</button><button class="btn" data-goto="rel">Relistar…</button></div>
+        </div>
+        <div class="card"><div class="ch"><div><h3>Recompensas</h3><p>Procura botões de resgatar na tela atual e em Objetivos. Experimental: me avise se não achar alguma.</p></div><button class="btn" data-op="claim" ${dis}>Resgatar recompensas</button></div></div>
+        <div class="card"><div class="ch"><div><h3>Proteção</h3><p>Nomes que nunca são vendidos nem relistados (Relist e Ferramentas). Um por linha; vale parte do nome.</p></div></div>
+          <textarea id="blockList" rows="5" placeholder="Ex.: Vinícius Júnior">${esc((c.block || []).join('\n'))}</textarea>
+        </div>
+      </div>
+      <div class="colside">
+        <div class="card logcard"><div class="ch"><h3>Log das Ferramentas</h3><div class="acts"><button class="link" data-logdl="tools">baixar</button><button class="link" data-logclr="tools">limpar</button></div></div>
+          <div class="log" data-src="tools"></div></div>
+      </div>
+    </div>`;
+  const segSync = () => { for (const b of $('uaDup').children) b.classList.toggle('on', b.dataset.v === (st.cfg.uaDup || 'tl')); };
+  segSync();
+  $('uaDup').onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; st.cfg.uaDup = b.dataset.v; saveCfg(); segSync(); };
+  $('uaClub').onchange = () => { st.cfg.uaClub = $('uaClub').checked; saveCfg(); };
+  $('blockList').onchange = () => { st.cfg.block = $('blockList').value.split('\n').map(x => x.trim()).filter(Boolean); saveCfg(); toast('Feito.', 'good'); };
+  el.onclick = e => {
+    const b = e.target.closest('[data-op]'); if (!b || b.disabled) return;
+    act(b, async () => { await modCmd('tools', b.dataset.op); toast('Ferramenta iniciada no Web App.', 'good'); });
+  };
+  renderLog();
+};
+
 // ---------- CONFIGURAÇÕES ----------
 PAGES.settings = () => {
   const el = $('p-settings');
@@ -319,6 +359,15 @@ PAGES.settings = () => {
       </div>
       <div class="card"><div class="ch"><h3>Geral</h3></div>
         <label class="tg"><input type="checkbox" id="setSound" ${st.cfg.sound ? 'checked' : ''}><span></span>Som ao comprar, nos alertas e quando um módulo para sozinho</label>
+        <label class="tg"><input type="checkbox" id="setKeys" ${st.cfg.keys ? 'checked' : ''}><span></span>Atalhos de teclado no Web App <small>Alt+Shift+S Snipe · Alt+Shift+G Galeria · Alt+Shift+R Relist · Alt+Shift+X parar · Enter/Esc no modo assistido</small></label>
+      </div>
+      <div class="card"><div class="ch"><div><h3>Menor preço do mercado</h3><p>Usado na venda do Sniper, na Galeria, no Relist e nas Ferramentas.</p></div></div>
+        <div class="field fb"><select id="setPriceSrc">
+          <option value="auto"${st.cfg.priceSrc === 'auto' ? ' selected' : ''}>Automático (Paletools se estiver ativo, senão a extensão)</option>
+          <option value="own"${st.cfg.priceSrc === 'own' ? ' selected' : ''}>Sempre pela extensão (sem Paletools)</option>
+          <option value="paletools"${st.cfg.priceSrc === 'paletools' ? ' selected' : ''}>Sempre pelo Paletools</option>
+        </select></div>
+        <div class="riskwhy">Pela extensão: abre "Comparar preço" do item, vê a oferta mais barata e anuncia um degrau abaixo. Funciona sem o Paletools.</div>
       </div>
       <div class="card"><div class="ch"><div><h3>Backup</h3><p>Configurações, filtros, estratégias, históricos e preços num arquivo .json. Importar substitui os dados atuais.</p></div></div>
         <div class="row"><button class="btn" id="bkExp">Exportar backup</button><label class="btn">Importar backup<input type="file" id="bkImp" accept=".json" hidden></label></div>
@@ -329,6 +378,8 @@ PAGES.settings = () => {
       </div>
     </div>`;
   $('setSound').onchange = () => { st.cfg.sound = $('setSound').checked; saveCfg(); };
+  $('setKeys').onchange = () => { st.cfg.keys = $('setKeys').checked; saveCfg(); };
+  $('setPriceSrc').onchange = () => { st.cfg.priceSrc = $('setPriceSrc').value; saveCfg(); toast('Feito.', 'good'); };
   $('themes').onclick = e => { const b = e.target.closest('[data-th]'); if (!b) return; st.cfg.theme = b.dataset.th; saveCfg(); setTheme(); for (const x of $('themes').children) x.classList.toggle('on', x === b); toast(`Tema ${THEMES[b.dataset.th].name}.`, 'good'); };
   $('bkExp').onclick = () => store.get(null, all => download(`fut-bots-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(all), 'application/json'));
   $('bkImp').onchange = async () => {
@@ -355,7 +406,7 @@ PAGES.docs = () => {
     <h3>First things first</h3>
     <ol>
       <li>Keep the <b>Web App open and visible</b> in the other window. This panel opens in a separate window for exactly that reason: if the Web App is minimized or in a hidden tab, Chrome slows the tools down.</li>
-      <li>The Gallery and selling at the "Cheapest" price use <b>Paletools</b>. Keep it installed and enabled.</li>
+      <li>Only the Gallery needs <b>Paletools</b> (the Gallery screen is theirs). Sniper, Relist and Tools work without it: the lowest price is found by the extension itself (Settings → Lowest market price).</li>
       <li>Only one tool works at a time. While one runs, the others wait (the top of the panel shows who is working and has a <b>Stop</b> button).</li>
       <li>The Web App shows a small widget with the three tools: you can start, stop and open this panel from it.</li>
       <li>The panel language can be changed with the <b>PT / EN / ES</b> buttons at the top. Activity log messages that are not translated yet stay in Portuguese.</li>
@@ -378,8 +429,12 @@ PAGES.docs = () => {
     <p>Cards you own but have not included count as yours: click <b>Include</b> on them to avoid wasting coins. Profit shows up in <b>Gallery → Profit and sales</b> when the Transfer List is opened.</p>
     <h3>Relist</h3>
     <p>Click <b>Relist now</b> from any Web App screen. It opens the Transfer List, clears sold items and relists expired and unlisted items at the "Cheapest" price, respecting your minimum price.</p>
+    <h3>Tools</h3>
+    <p>One-off actions: sort the <b>unassigned</b> pile (non-duplicates to the club; duplicates to the transfer list or for sale), send non-duplicates from the Transfer List to the club, clear sold items while recording profit, claim rewards, and a <b>protection</b> list of names that are never sold.</p>
+    <h3>Shortcuts</h3>
+    <p>In the Web App: <b>Alt+Shift+S</b> Snipe, <b>Alt+Shift+G</b> Gallery, <b>Alt+Shift+R</b> Relist (start or stop), <b>Alt+Shift+X</b> stop everything. In assisted mode, <b>Enter</b> buys and <b>Esc</b> skips.</p>
     <h3>The tools stop on their own when</h3>
-    <p>A captcha shows up, coins run out, the unassigned pile fills up, the Transfer List is full (the Gallery can clean up and continue), or they reach the limits you set.</p>
+    <p>A captcha shows up, coins run out, the unassigned pile fills up, the Transfer List is full (the Gallery can clean up and continue), or they reach the limits you set. EA limit warnings pause any tool for a few minutes; three warnings in 15 minutes stop it for good.</p>
     <h3>Coming from the old extensions</h3>
     <p>Remove <b>FUT Galeria Bot</b>, <b>FUT Relist Bot</b> and <b>FUT Snipe Bot</b> in <code>chrome://extensions</code> so they do not run alongside this one. To bring over Snipe data, export the backup there before removing it and import it in Settings.</p>
     <p class="riskwhy">EA prohibits automation on the Web App. Using these tools can lead to transfer market restrictions or a ban. Use in moderation and at your own risk.</p>
@@ -389,7 +444,7 @@ PAGES.docs = () => {
     <h3>Antes que nada</h3>
     <ol>
       <li>Deja la <b>Web App abierta y visible</b> en la otra ventana. Este panel se abre en una ventana aparte justamente por eso: si la Web App queda minimizada o en una pestaña oculta, Chrome ralentiza los módulos.</li>
-      <li>La Galería y la venta al "Más barato" usan <b>Paletools</b>. Déjalo instalado y activo.</li>
+      <li>Solo la Galería necesita <b>Paletools</b> (la pantalla Gallery es suya). El Sniper, el Relist y las Herramientas funcionan sin él: el precio más bajo lo calcula la propia extensión (Ajustes → Precio más bajo del mercado).</li>
       <li>Solo trabaja un módulo a la vez. Mientras uno funciona, los demás esperan (arriba del panel se ve quién está trabajando y está el botón <b>Detener</b>).</li>
       <li>En la Web App hay un widget pequeño con los tres módulos: desde él puedes iniciar, detener y abrir este panel.</li>
       <li>El idioma del panel se cambia con los botones <b>PT / EN / ES</b> de arriba. Los mensajes del log que todavía no están traducidos quedan en portugués.</li>
@@ -412,8 +467,12 @@ PAGES.docs = () => {
     <p>Las cartas que ya tienes pero no incluiste cuentan como tuyas: haz clic en <b>Include</b> en ellas para no gastar de más. La ganancia aparece en <b>Galería → Ganancias y ventas</b> cuando se abre la lista de transferibles.</p>
     <h3>Relist</h3>
     <p>Haz clic en <b>Relistar ahora</b> desde cualquier pantalla de la Web App. Abre la lista de transferibles, retira los vendidos y vuelve a publicar los caducados y los no publicados al "Más barato", respetando tu precio mínimo.</p>
+    <h3>Herramientas</h3>
+    <p>Acciones puntuales: organizar los <b>no asignados</b> (no repetidos al club; repetidos a la lista de transf. o a la venta), enviar los no repetidos de la lista de transferibles al club, retirar los vendidos registrando la ganancia, reclamar recompensas y una lista de <b>protección</b> con nombres que nunca se venden.</p>
+    <h3>Atajos</h3>
+    <p>En la Web App: <b>Alt+Shift+S</b> Snipe, <b>Alt+Shift+G</b> Galería, <b>Alt+Shift+R</b> Relist (inicia o detiene), <b>Alt+Shift+X</b> detiene todo. En modo asistido, <b>Enter</b> compra y <b>Esc</b> salta.</p>
     <h3>Los módulos se detienen solos cuando</h3>
-    <p>Aparece un captcha, faltan monedas, los no asignados se llenan, la lista de transferibles está llena (la Galería puede limpiar y seguir), o llegan a los límites que definiste.</p>
+    <p>Aparece un captcha, faltan monedas, los no asignados se llenan, la lista de transferibles está llena (la Galería puede limpiar y seguir), o llegan a los límites que definiste. Los avisos de límite de EA pausan cualquier módulo unos minutos; tres avisos en 15 minutos lo detienen del todo.</p>
     <h3>Si vienes de las extensiones antiguas</h3>
     <p>Quita <b>FUT Galeria Bot</b>, <b>FUT Relist Bot</b> y <b>FUT Snipe Bot</b> en <code>chrome://extensions</code> para que no funcionen junto con esta. Para traer los datos del Snipe, exporta la copia allí antes de quitarlo e impórtala en Ajustes.</p>
     <p class="riskwhy">EA prohíbe la automatización en la Web App. Usar estos módulos puede llevar a restricciones en el mercado o a un baneo. Úsalos con moderación y bajo tu propio riesgo.</p>
@@ -423,7 +482,7 @@ PAGES.docs = () => {
     <h3>Antes de tudo</h3>
     <ol>
       <li>Deixe o <b>Web App aberto e visível</b> na outra janela. Este painel abre numa janela separada justamente para isso: se o Web App ficar minimizado ou numa aba escondida, o Chrome desacelera os módulos.</li>
-      <li>A Galeria e a venda no "Mais barato" usam o <b>Paletools</b>. Deixe ele instalado e ativo.</li>
+      <li>Só a Galeria precisa do <b>Paletools</b> (a tela Gallery é dele). O Sniper, o Relist e as Ferramentas funcionam sem ele: o menor preço é calculado pela própria extensão (Configurações → Menor preço do mercado).</li>
       <li>Só um módulo trabalha por vez. Enquanto um roda, os outros esperam (o topo do painel mostra quem está trabalhando e tem o botão <b>Parar</b>).</li>
       <li>No Web App há um widget pequeno com os três módulos: dá para iniciar, parar e abrir este painel por ele.</li>
     </ol>
@@ -445,8 +504,12 @@ PAGES.docs = () => {
     <p>Cartas que você já tem mas não incluiu contam como suas: clique em <b>Include</b> nelas para não gastar à toa. O lucro aparece em <b>Galeria → Lucro e vendas</b> quando a Lista de Transferências é aberta.</p>
     <h3>Relist</h3>
     <p>Clique em <b>Relistar agora</b> de qualquer tela do Web App. Ele abre a Lista de Transferências, retira os vendidos e anuncia de novo os expirados e os não listados pelo "Mais barato", respeitando o seu preço mínimo.</p>
+    <h3>Ferramentas</h3>
+    <p>Ações de uma vez: organizar os <b>não atribuídos</b> (não repetidos para o clube; repetidos para a Lista de transf. ou à venda), enviar os não repetidos da Lista de Transferências ao clube, retirar os vendidos registrando o lucro, resgatar recompensas e uma lista de <b>proteção</b> com nomes que nunca são vendidos.</p>
+    <h3>Atalhos</h3>
+    <p>No Web App: <b>Alt+Shift+S</b> Snipe, <b>Alt+Shift+G</b> Galeria, <b>Alt+Shift+R</b> Relist (inicia ou para), <b>Alt+Shift+X</b> para tudo. No modo assistido, <b>Enter</b> compra e <b>Esc</b> pula.</p>
     <h3>Os módulos param sozinhos quando</h3>
-    <p>Aparece captcha, faltam moedas, os não atribuídos enchem, a Lista de Transferências lota (a Galeria pode limpar e seguir), ou chegam nos limites que você definiu.</p>
+    <p>Aparece captcha, faltam moedas, os não atribuídos enchem, a Lista de Transferências lota (a Galeria pode limpar e seguir), ou chegam nos limites que você definiu. Avisos de limite do EA pausam qualquer módulo por alguns minutos; três avisos em 15 minutos param de vez.</p>
     <h3>Vindo das extensões antigas</h3>
     <p>Remova o <b>FUT Galeria Bot</b>, o <b>FUT Relist Bot</b> e o <b>FUT Snipe Bot</b> em <code>chrome://extensions</code> para não rodarem junto com esta. Para trazer os dados do Snipe, exporte o backup nele antes de remover e importe em Configurações.</p>
     <p class="riskwhy">A EA proíbe automação no Web App. Usar estes módulos pode levar a restrição no mercado ou banimento. Use com moderação e por sua conta e risco.</p>

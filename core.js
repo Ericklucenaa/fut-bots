@@ -169,6 +169,11 @@ var FUT = (() => {
     home: /^(In[íi]cio|Home)$/i,
     gallery: /^(Gallery|Galeria|Galer[íi]a)$/i,
     // posições (pt / en / es), para diferenciar versões da mesma carta
+    comparePrice: /^(Comparar pre[çc]o|Compare Price|Comparar precio)$/i,
+    unassignedTile: /^(Itens n[ãa]o atribu[íi]dos|N[ãa]o atribu[íi]dos|Unassigned( Items)?|Objetos sin asignar|Objetos no asignados|No asignados)$/i,
+    claimAll: /^(Resgatar tudo|Resgatar todas?|Reivindicar tudo|Reivindicar todas?|Coletar tudo|Claim All|Collect All|Reclamar todo|Recoger todo|Reclamar todas)$/i,
+    claimOne: /^(Resgatar|Reivindicar|Coletar|Resgatar recompensas?|Claim|Collect|Claim Rewards?|Reclamar|Recoger|Reclamar recompensas?)$/i,
+    objectives: /^(Objetivos|Objectives)$/i,
     pos: /^(GL|GOL|ZAG|LD|LE|VOL|MC|MEI|ME|MD|PE|PD|ATA|SA|GK|CB|LB|RB|LWB|RWB|CDM|CM|CAM|LM|RM|LW|RW|ST|CF|POR|DFC|LI|CAD|CAI|MCD|MCO|MI|EI|ED|DC|SD)$/i,
   };
 
@@ -286,8 +291,51 @@ var FUT = (() => {
     if (out === 'full') { closeDialog(); return 'full'; }
     return out ? 'ok' : 'unknown';
   }
+  // Paletools está ativo? (ele coloca o menu "Paletools" no Web App)
+  let ptT = 0, ptOn = false;
+  function paletoolsActive() {
+    if (Date.now() - ptT > 30000) { ptT = Date.now(); ptOn = [...document.querySelectorAll('.ut-tab-bar-item, nav button, nav a, .ut-tab-bar button')].some(e => !mine(e) && /^Paletools$/i.test(norm(e.textContent))); }
+    return ptOn;
+  }
+  // Menor preço pela própria extensão: abre "Comparar preço" do item, lê as ofertas e volta.
+  async function cheapestOwn(accRe, reselect) {
+    const cmp = await waitFor(() => fastFind(T.comparePrice), 5000, null, 150);
+    if (!cmp) return { err: 'não achei o botão "Comparar preço" do item' };
+    const before = new Set(items());
+    click(cmp);
+    const fresh = () => items().filter(r => !before.has(r) && T.row.test(r.innerText));
+    const got = await waitFor(() => {
+      if (loading()) return null;
+      if (fresh().length) return 'rows';
+      if (noResultsEl() || T.noResults.test(popupText())) return 'none';
+      return null;
+    }, 12000, null, 150);
+    let min = null, n = 0;
+    if (got === 'rows') {
+      await sleep(400);
+      const ps = fresh().filter(r => !T.soldOrExpired.test(r.innerText)).map(rowBuyNow).filter(p => p != null);
+      n = ps.length; if (ps.length) min = Math.min(...ps);
+    }
+    // volta para o item
+    const back = [...document.querySelectorAll('.ut-navigation-button-control, button.btn-navigation')].find(b => vis(b) && !mine(b));
+    if (back) click(back);
+    if (!(await waitFor(() => !loading() && fastFind(accRe), 6000, null, 150)) && reselect) { await reselect(); await waitFor(() => fastFind(accRe), 5000, null, 150); }
+    return { min, n, none: got !== 'rows' };
+  }
   // minBn: não lista abaixo disso · buy + noLoss: não lista se der prejuízo depois dos 5%
-  async function listCheapest({ minBn = 0, buy = null, noLoss = false, accRe = T.listOnMarket } = {}) {
+  // fonte do preço (cfg.priceSrc): auto = Paletools se estiver ativo, senão a própria extensão · own · paletools
+  async function listCheapest({ minBn = 0, buy = null, noLoss = false, accRe = T.listOnMarket, reselect = null } = {}) {
+    const src = D.cfg.priceSrc || 'auto';
+    if (src === 'own' || (src === 'auto' && !paletoolsActive())) {
+      const c = await cheapestOwn(accRe, reselect);
+      if (c.err) return { ok: false, why: c.err };
+      if (c.min == null) return { ok: false, keep: true, why: 'ninguém está vendendo essa carta agora (sem preço de referência)' };
+      const bn = FSB.ladderPrev(c.min) >= 200 ? FSB.ladderPrev(c.min) : c.min;   // um degrau abaixo do mais barato
+      if (minBn && bn < minBn) return { ok: false, keep: true, bn, why: `o mais barato é ${fmt(c.min)}, abaixo do seu mínimo de ${fmt(minBn)}` };
+      if (noLoss && buy != null && net(bn) <= buy) return { ok: false, keep: true, bn, why: `o mais barato é ${fmt(c.min)} (dá prejuízo depois dos 5% do EA)` };
+      if (!fastFind(accRe)) return { ok: false, why: 'não consegui voltar para o item depois de comparar o preço' };
+      return listFixed(bn, accRe);
+    }
     await openListing(accRe);
     const cheap = await waitFor(() => fastFind(T.cheapest) || find(T.cheapest), 6000, 'o botão "Mais barato" (o Paletools está ativo?)');
     const before = priceInputs().map(i => i.value).join('|');
@@ -304,8 +352,8 @@ var FUT = (() => {
     if (r !== 'ok') return { ok: false, why: 'o anúncio não foi confirmado' };
     return { ok: true, bn, start };
   }
-  async function listFixed(price) {
-    await openListing();
+  async function listFixed(price, accRe = T.listOnMarket) {
+    await openListing(accRe);
     const ins = await waitFor(() => { const i = priceInputs(); return i.length >= 2 ? i : null; }, 5000, 'os campos de preço');
     const bn = FSB.ladderDown(price), start = FSB.ladderPrev(bn) || 150;
     setInput(ins[ins.length - 2], start); await sleep(60);
@@ -349,9 +397,11 @@ var FUT = (() => {
     await sleep(1200);
   }
   // "Retirar vendidos": as moedas já caíram na conta, só tira os itens da lista
+  const hooks = {};
   async function clearSold(log = () => {}) {
     const b = fastFind(T.clearSold);
     if (!b) return 0;
+    if (hooks.beforeClearSold) { try { await hooks.beforeClearSold(); } catch {} }
     const n = items().filter(r => T.sold.test(r.innerText)).length;
     click(b); await sleep(800);
     await confirmIfAsked();
@@ -360,6 +410,23 @@ var FUT = (() => {
     await sleep(600);
     return n || 1;
   }
+
+  // ---------- aviso de limite do EA: pausa e continua (3 avisos em 15 min = para) ----------
+  const limitHits = [];
+  async function limitPause(e, logf) {
+    const now = Date.now();
+    while (limitHits.length && now - limitHits[0] > 15 * 6e4) limitHits.shift();
+    limitHits.push(now);
+    ev('block', { why: 'aviso do EA: ' + e.message });
+    if (limitHits.length >= 3) throw new Stop(`O EA limitou o mercado 3 vezes em 15 min. Pare um bom tempo. Aviso: "${e.message}"`);
+    const s = rndInt(90, 180) * limitHits.length;
+    logf(`   ⏸ aviso do EA: "${e.message}" — pausando ${s}s e continuando (${limitHits.length}/3)…`, 'warn');
+    for (let k = 0; k < 4 && dialogs().length; k++) { closeDialog(); await sleep(200); }
+    dismissNotifications();
+    await idle(s * 1000);
+  }
+  // lista de proteção: nomes que nunca são vendidos nem relistados
+  const blocked = name => { const n = norm(name || '').toLowerCase(); return !!n && (D.cfg.block || []).some(b => b && n.includes(String(b).toLowerCase())); };
 
   // ---------- log, eventos, banca ----------
   let logSrc = '';
@@ -422,7 +489,7 @@ var FUT = (() => {
     checkBlockers, waitFor, idle, closeDialog, confirmIfAsked, escKey, dismissNotifications,
     items, rowBuyNow, buyBtn, btnPrice, noResultsEl, ownedPanel, coins, itemIdent, headerTitle,
     setInput, searchView, priceInputs, openListing, confirmListing, listCheapest, listFixed,
-    navBtn, onTransferList, goToTransferList, clearSold,
+    navBtn, onTransferList, goToTransferList, clearSold, hooks, limitPause, blocked, paletoolsActive, cheapestOwn,
     log, ev, sampleBank, beep, mod, status, command,
   };
 })();
