@@ -27,6 +27,7 @@
     <symbol id="i-tl" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></symbol>
     <symbol id="i-keep" viewBox="0 0 24 24"><path d="M3 13.5h5l1.5 3h5l1.5-3h5"/><path d="M5.5 5h13L21 13.5V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5.5z"/></symbol>
     <symbol id="i-sell" viewBox="0 0 24 24"><path d="M20.5 12.5 12.5 20.5a1.4 1.4 0 0 1-2 0L3 13V3h10l7.5 7.5a1.4 1.4 0 0 1 0 2z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
     <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
   </defs>
 </svg>
@@ -69,6 +70,9 @@
       <div class="hstat"><small>Lucro hoje</small><b id="hProfit">0</b></div>
       <div class="hstat"><small>Buscas 24 h</small><b id="hReq">0</b></div>
       <div class="hstat"><small>Risco</small><b id="hRisk">Baixo</b></div>
+      <div class="langsel" id="langSel" data-notr title="Idioma / Language / Idioma">
+        <svg><use href="#i-globe"/></svg><button data-l="pt">PT</button><button data-l="en">EN</button><button data-l="es">ES</button>
+      </div>
     </header>
 
     <div class="upd" id="upd" hidden></div>
@@ -92,8 +96,8 @@
               <input type="text" id="pName" placeholder="Jogador (deixe vazio para qualquer um)">
               <button class="btn" id="pSearch">Buscar</button>
             </div>
-            <div class="sugg" id="pSugg"></div>
-            <div class="fgrid" id="fGrid"></div>
+            <div class="sugg" id="pSugg" data-notr></div>
+            <div class="fgrid" id="fGrid" data-notr></div>
             <div class="fhint" id="fHint"></div>
             <div class="row">
               <input type="text" id="fName" placeholder="Nome do filtro (ex.: Ouros raros Premier League)" maxlength="40">
@@ -221,6 +225,7 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 
+<script src="i18n.js"></script>
 <script src="lib.js"></script>
 <script src="control.js"></script>
 <script src="control-mods.js"></script>

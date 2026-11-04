@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FUT Bots",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Snipe, Galeria e Relist para o EA FC Ultimate Team Web App, num painel só.",
   "permissions": ["storage", "tabs"],
   "host_permissions": ["https://www.ea.com/*"],
@@ -9,7 +9,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.ea.com/*"],
-      "js": ["lib.js", "core.js", "snipe.js", "galeria.js", "relist.js", "widget.js"],
+      "js": ["i18n.js", "lib.js", "core.js", "snipe.js", "galeria.js", "relist.js", "widget.js"],
       "run_at": "document_idle"
     }
   ],

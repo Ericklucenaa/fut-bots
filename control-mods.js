@@ -278,7 +278,7 @@ function galProfit() {
   $('gWipe').onclick = () => { if (confirm('Apagar as compras da galeria deste período?')) edit({ edit: 'wipe', from: a, to: z === Infinity ? null : z }); };
   $('gCsv').onclick = () => {
     const head = 'Data da compra;Jogador;Overall;Time;Pago;Listada inicial;Listada imediato;Vendida por;Recebido (-5%);Lucro/perda;Situação;Data da venda';
-    const lines = B.slice().reverse().map(b => [new Date(b.t).toLocaleString('pt-BR'), b.name, b.rating ?? '', b.set || '', b.buy, b.listStart ?? '', b.listBN ?? '', b.sale ?? '', b.sale ? net(b.sale) : '', plOf(b) ?? '', GST[b.status] || b.status, b.soldAt ? new Date(b.soldAt).toLocaleString('pt-BR') : ''].map(v => String(v).replace(/;/g, ',')).join(';'));
+    const lines = B.slice().reverse().map(b => [new Date(b.t).toLocaleString(FSB.loc()), b.name, b.rating ?? '', b.set || '', b.buy, b.listStart ?? '', b.listBN ?? '', b.sale ?? '', b.sale ? net(b.sale) : '', plOf(b) ?? '', GST[b.status] || b.status, b.soldAt ? new Date(b.soldAt).toLocaleString(FSB.loc()) : ''].map(v => String(v).replace(/;/g, ',')).join(';'));
     download('fut-bots-galeria-lucro.csv', [head, ...lines].join('\r\n'), 'text/csv');
   };
 }
@@ -322,7 +322,7 @@ PAGES.settings = () => {
       </div>
       <div class="card"><div class="ch"><div><h3>Backup</h3><p>Configurações, filtros, estratégias, históricos e preços num arquivo .json. Importar substitui os dados atuais.</p></div></div>
         <div class="row"><button class="btn" id="bkExp">Exportar backup</button><label class="btn">Importar backup<input type="file" id="bkImp" accept=".json" hidden></label></div>
-        <div class="riskwhy">Vindo do antigo <b>FUT Snipe Bot</b>? Exporte o backup nele (Configurações → Exportar) e importe aqui: filtros, estratégias e histórico vêm junto. Os dados do Galeria Bot e do Relist Bot são trazidos sozinhos na primeira vez que o Web App abre com esta extensão.</div>
+        <div class="riskwhy">${L('Vindo do antigo <b>FUT Snipe Bot</b>? Exporte o backup nele (Configurações → Exportar) e importe aqui: filtros, estratégias e histórico vêm junto. Os dados do Galeria Bot e do Relist Bot são trazidos sozinhos na primeira vez que o Web App abre com esta extensão.', 'Coming from the old <b>FUT Snipe Bot</b>? Export the backup there (Settings → Export) and import it here: filters, strategies and history come along. Galeria Bot and Relist Bot data are brought over automatically the first time the Web App opens with this extension.', '¿Vienes del antiguo <b>FUT Snipe Bot</b>? Exporta la copia allí (Configuración → Exportar) e impórtala aquí: filtros, estrategias e historial vienen juntos. Los datos del Galeria Bot y del Relist Bot se traen solos la primera vez que la Web App se abre con esta extensión.')}</div>
       </div>
       <div class="card"><div class="ch"><h3>Limpar dados</h3></div>
         <div class="row"><button class="btn danger" data-clr="logs">Limpar o log</button><button class="btn danger" data-clr="events">Apagar o histórico do Snipe</button><button class="btn danger" data-clr="prices">Apagar os preços</button><button class="btn danger" data-clr="gal">Apagar o lucro da Galeria</button></div>
@@ -348,9 +348,77 @@ PAGES.settings = () => {
   };
 };
 
-// ---------- COMO USAR ----------
+// ---------- COMO USAR (um texto por idioma) ----------
 PAGES.docs = () => {
-  $('p-docs').innerHTML = `<div class="docs">
+  const html = I18N.get() === 'en' ? `<div class="docs">
+    <div class="ph"><div><h2>How to use</h2><p>Three tools for the EA FC Ultimate Team Web App, controlled from here.</p></div></div>
+    <h3>First things first</h3>
+    <ol>
+      <li>Keep the <b>Web App open and visible</b> in the other window. This panel opens in a separate window for exactly that reason: if the Web App is minimized or in a hidden tab, Chrome slows the tools down.</li>
+      <li>The Gallery and selling at the "Cheapest" price use <b>Paletools</b>. Keep it installed and enabled.</li>
+      <li>Only one tool works at a time. While one runs, the others wait (the top of the panel shows who is working and has a <b>Stop</b> button).</li>
+      <li>The Web App shows a small widget with the three tools: you can start, stop and open this panel from it.</li>
+      <li>The panel language can be changed with the <b>PT / EN / ES</b> buttons at the top. Activity log messages that are not translated yet stay in Portuguese.</li>
+    </ol>
+    <h3>Sniper</h3>
+    <ol>
+      <li>In the Web App, open <b>Transfers → Search the Transfer Market</b> (players or consumables).</li>
+      <li>In the Sniper, click <b>Read from Web App</b> and build the filter, or build it in the Web App and use <b>Copy from screen</b>. When you click <b>Snipe</b>, the panel filter is applied to the Web App; if nothing is picked in the panel, the on-screen filter is used.</li>
+      <li>Set the <b>offer price</b> (or <b>% profit</b>), what to do <b>after buying</b> and the pace.</li>
+      <li>Pick <b>Test</b>, <b>Assisted</b> or <b>Automatic</b> in the bottom bar and click <b>Snipe</b>.</li>
+    </ol>
+    <p>The filter lists (rarities, events, leagues) update themselves: new options are added when they appear in the Web App, and the Sniper re-reads the lists every 12 h.</p>
+    <p>When someone buys first ("Bid status changed…"), the Sniper tries the next offer and keeps searching, without stopping. EA limit warnings pause sniping for a few minutes; three warnings in 15 minutes stop it for good.</p>
+    <h3>Gallery</h3>
+    <ol>
+      <li>In the Web App, open <b>Paletools → Gallery</b>, pick the <b>Category</b> (league) and the <b>Set</b> (team).</li>
+      <li>On the Gallery page, check the max price per card and the rules (next team, selling, cleanup).</li>
+      <li>Start with <b>Test</b>: it does the whole route except buying. Then switch to <b>Buy for real</b>.</li>
+    </ol>
+    <p>Cards you own but have not included count as yours: click <b>Include</b> on them to avoid wasting coins. Profit shows up in <b>Gallery → Profit and sales</b> when the Transfer List is opened.</p>
+    <h3>Relist</h3>
+    <p>Click <b>Relist now</b> from any Web App screen. It opens the Transfer List, clears sold items and relists expired and unlisted items at the "Cheapest" price, respecting your minimum price.</p>
+    <h3>The tools stop on their own when</h3>
+    <p>A captcha shows up, coins run out, the unassigned pile fills up, the Transfer List is full (the Gallery can clean up and continue), or they reach the limits you set.</p>
+    <h3>Coming from the old extensions</h3>
+    <p>Remove <b>FUT Galeria Bot</b>, <b>FUT Relist Bot</b> and <b>FUT Snipe Bot</b> in <code>chrome://extensions</code> so they do not run alongside this one. To bring over Snipe data, export the backup there before removing it and import it in Settings.</p>
+    <p class="riskwhy">EA prohibits automation on the Web App. Using these tools can lead to transfer market restrictions or a ban. Use in moderation and at your own risk.</p>
+    <p class="riskwhy">FUT Bots is free and open source (MIT). <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">Code on GitHub</a> · <a href="${DONATE_URL}" target="_blank" rel="noopener noreferrer">Support on Ko-fi</a></p>
+  </div>` : I18N.get() === 'es' ? `<div class="docs">
+    <div class="ph"><div><h2>Cómo usar</h2><p>Tres herramientas para la Web App de EA FC Ultimate Team, controladas desde aquí.</p></div></div>
+    <h3>Antes que nada</h3>
+    <ol>
+      <li>Deja la <b>Web App abierta y visible</b> en la otra ventana. Este panel se abre en una ventana aparte justamente por eso: si la Web App queda minimizada o en una pestaña oculta, Chrome ralentiza los módulos.</li>
+      <li>La Galería y la venta al "Más barato" usan <b>Paletools</b>. Déjalo instalado y activo.</li>
+      <li>Solo trabaja un módulo a la vez. Mientras uno funciona, los demás esperan (arriba del panel se ve quién está trabajando y está el botón <b>Detener</b>).</li>
+      <li>En la Web App hay un widget pequeño con los tres módulos: desde él puedes iniciar, detener y abrir este panel.</li>
+      <li>El idioma del panel se cambia con los botones <b>PT / EN / ES</b> de arriba. Los mensajes del log que todavía no están traducidos quedan en portugués.</li>
+    </ol>
+    <h3>Sniper</h3>
+    <ol>
+      <li>En la Web App, abre <b>Transferencias → Buscar en el Mercado</b> (jugadores o consumibles).</li>
+      <li>En el Sniper, haz clic en <b>Leer de la Web App</b> y arma el filtro, o ármalo en la Web App y usa <b>Copiar de la pantalla</b>. Al hacer clic en <b>Snipear</b>, el filtro del panel se aplica en la Web App; si no hay nada elegido en el panel, vale el de la pantalla.</li>
+      <li>Define el <b>valor de oferta</b> (o el <b>% de ganancia</b>), qué hacer <b>después de comprar</b> y el ritmo.</li>
+      <li>Elige <b>Prueba</b>, <b>Asistido</b> o <b>Automático</b> en la barra de abajo y haz clic en <b>Snipear</b>.</li>
+    </ol>
+    <p>Las listas del filtro (rarezas, eventos, ligas) se actualizan solas: las opciones nuevas entran cuando aparecen en la Web App, y el Sniper vuelve a leer las listas cada 12 h.</p>
+    <p>Cuando alguien compra antes ("El estado de la puja ha cambiado…"), el Sniper prueba la siguiente oferta y sigue buscando, sin detenerse. Los avisos de límite de EA pausan el snipe unos minutos; tres avisos en 15 minutos lo detienen del todo.</p>
+    <h3>Galería</h3>
+    <ol>
+      <li>En la Web App, abre <b>Paletools → Gallery</b>, elige la <b>Category</b> (liga) y el <b>Set</b> (equipo).</li>
+      <li>En la página Galería, revisa el precio máximo por carta y las reglas (siguiente equipo, venta, limpieza).</li>
+      <li>Empieza por <b>Prueba</b>: hace todo el recorrido menos la compra. Después cambia a <b>Comprar de verdad</b>.</li>
+    </ol>
+    <p>Las cartas que ya tienes pero no incluiste cuentan como tuyas: haz clic en <b>Include</b> en ellas para no gastar de más. La ganancia aparece en <b>Galería → Ganancias y ventas</b> cuando se abre la lista de transferibles.</p>
+    <h3>Relist</h3>
+    <p>Haz clic en <b>Relistar ahora</b> desde cualquier pantalla de la Web App. Abre la lista de transferibles, retira los vendidos y vuelve a publicar los caducados y los no publicados al "Más barato", respetando tu precio mínimo.</p>
+    <h3>Los módulos se detienen solos cuando</h3>
+    <p>Aparece un captcha, faltan monedas, los no asignados se llenan, la lista de transferibles está llena (la Galería puede limpiar y seguir), o llegan a los límites que definiste.</p>
+    <h3>Si vienes de las extensiones antiguas</h3>
+    <p>Quita <b>FUT Galeria Bot</b>, <b>FUT Relist Bot</b> y <b>FUT Snipe Bot</b> en <code>chrome://extensions</code> para que no funcionen junto con esta. Para traer los datos del Snipe, exporta la copia allí antes de quitarlo e impórtala en Ajustes.</p>
+    <p class="riskwhy">EA prohíbe la automatización en la Web App. Usar estos módulos puede llevar a restricciones en el mercado o a un baneo. Úsalos con moderación y bajo tu propio riesgo.</p>
+    <p class="riskwhy">FUT Bots es gratis y de código abierto (MIT). <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">Código en GitHub</a> · <a href="${DONATE_URL}" target="_blank" rel="noopener noreferrer">Apoyar en Ko-fi</a></p>
+  </div>` : `<div class="docs">
     <div class="ph"><div><h2>Como usar</h2><p>Três ferramentas para o EA FC Ultimate Team Web App, controladas daqui.</p></div></div>
     <h3>Antes de tudo</h3>
     <ol>
@@ -384,4 +452,5 @@ PAGES.docs = () => {
     <p class="riskwhy">A EA proíbe automação no Web App. Usar estes módulos pode levar a restrição no mercado ou banimento. Use com moderação e por sua conta e risco.</p>
     <p class="riskwhy">FUT Bots é grátis e de código aberto (MIT). <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">Código no GitHub</a> · <a href="${DONATE_URL}" target="_blank" rel="noopener noreferrer">Apoiar no Ko-fi</a></p>
   </div>`;
+  $('p-docs').innerHTML = html.replace('<div class="docs">', '<div class="docs" data-notr>');
 };

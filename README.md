@@ -10,7 +10,7 @@ Extensão **gratuita e de código aberto** para o Chrome com três ferramentas p
 | **Galeria** | Completa as galerias do **Paletools**: compra as cartas que faltam (até o seu preço), lista no mais barato e passa para o próximo time. |
 | **Relist** | Abre a Lista de Transferências, retira os vendidos e anuncia de novo os expirados e os não listados pelo "Mais barato". |
 
-O painel também tem dashboard de lucro e banca, histórico, gráfico de preços por filtro, simulador de lucro, estratégias prontas e 10 temas.
+O painel também tem dashboard de lucro e banca, histórico, gráfico de preços por filtro, simulador de lucro, estratégias prontas, 10 temas e 3 idiomas (**português, inglês e espanhol**, no seletor PT / EN / ES do topo).
 
 ![Painel do FUT Bots: tela Início](docs/inicio.png)
 

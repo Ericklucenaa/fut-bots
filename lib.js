@@ -1,6 +1,6 @@
 // Constantes e contas compartilhadas entre os motores no Web App e o painel de controle.
 var FSB = (() => {
-  const VERSION = '2.2.0';
+  const VERSION = '2.3.0';
   const DONATE_URL = 'https://ko-fi.com/ericklucena';
   const REPO_URL = 'https://github.com/Ericklucenaa/fut-bots';
   // módulos da extensão
@@ -15,7 +15,10 @@ var FSB = (() => {
   const ladderUp = p => p < 150 ? 150 : ladderDown(p) + step(ladderDown(p));
   const ladderPrev = p => p <= 150 ? 0 : ladderDown(p - 1);
   const net = v => Math.floor(v * 0.95);   // o EA fica com 5% da venda
-  const fmt = n => n == null || !isFinite(n) ? '?' : Math.round(n).toLocaleString('pt-BR');
+  let LOC = 'pt-BR';
+  const setLoc = l => { LOC = l || 'pt-BR'; };
+  const loc = () => LOC;
+  const fmt = n => n == null || !isFinite(n) ? '?' : Math.round(n).toLocaleString(LOC, { useGrouping: 'always' });
   const norm = s => (s || '').replace(/\s+/g, ' ').trim();
   const num = s => { const n = parseInt(String(s == null ? '' : s).replace(/[^\d]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -117,5 +120,5 @@ var FSB = (() => {
     return { t: 'Baixo', c: 'good', v: Math.max(8, Math.min(40, h / 200 * 40)), h, d, why: why.length ? why : ['sem problemas registrados'] };
   }
 
-  return { VERSION, DONATE_URL, REPO_URL, MODS, GAL_DEF, REL_DEF, step, ladderDown, ladderUp, ladderPrev, net, fmt, norm, num, SPEEDS, RESTS, TRIES, RUNFOR, AFTER, DEF, STRAT_KEYS, PRESETS, KIND, DAY, HOUR, riskLevel, THEMES, theme, applyTheme, DEST, SELLHOW, FALLBACK, destName, fixCfg };
+  return { setLoc, loc, VERSION, DONATE_URL, REPO_URL, MODS, GAL_DEF, REL_DEF, step, ladderDown, ladderUp, ladderPrev, net, fmt, norm, num, SPEEDS, RESTS, TRIES, RUNFOR, AFTER, DEF, STRAT_KEYS, PRESETS, KIND, DAY, HOUR, riskLevel, THEMES, theme, applyTheme, DEST, SELLHOW, FALLBACK, destName, fixCfg };
 })();

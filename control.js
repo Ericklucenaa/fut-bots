@@ -57,8 +57,28 @@ setInterval(poll, 600);
 // ---------- carregar ----------
 store.get(null, r => {
   for (const k of Object.keys(st)) if (r[k] !== undefined) st[k] = FIX[k] ? FIX[k](r[k]) : r[k];
+  setLang(st.cfg.lang || I18N.detect(), false);
   setTheme(); buildStatic(); renderAll(); poll(); checkUpdate();
+  I18N.install(document.body);
 });
+
+// ---------- idioma ----------
+const tr = s => I18N.tr(s), L = (pt, en, es) => I18N.L(pt, en, es);
+const nativeConfirm = window.confirm.bind(window), nativePrompt = window.prompt.bind(window);
+window.confirm = m => nativeConfirm(tr(m));
+window.prompt = (m, d) => nativePrompt(tr(m), d);
+function setLang(l, rerender = true) {
+  I18N.set(l); FSB.setLoc(I18N.LOCALES[I18N.get()]);
+  document.documentElement.lang = { pt: 'pt-BR', en: 'en', es: 'es' }[I18N.get()];
+  for (const b of $('langSel').querySelectorAll('button')) b.classList.toggle('on', b.dataset.l === I18N.get());
+  if (!rerender) return;
+  renderFilterGrid(); renderFilters(); renderLog(); sync(); renderPresetSelect(); renderPage(); renderStatus(); checkUpdate();
+  I18N.retranslate();
+}
+$('langSel').onclick = e => {
+  const b = e.target.closest('[data-l]'); if (!b) return;
+  st.cfg.lang = b.dataset.l; saveCfg(); setLang(b.dataset.l);
+};
 
 // ---------- versão nova (só para quem instalou pelo GitHub; a Chrome Web Store atualiza sozinha) ----------
 const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
@@ -78,7 +98,7 @@ async function checkUpdate() {
   const cur = chrome.runtime.getManifest().version;
   if (!rel.tag || !newer(rel.tag, cur)) return;
   const u = $('upd');
-  u.innerHTML = `<b>Versão ${esc(rel.tag)} disponível</b><span class="mut">Você está na ${esc(cur)}. Baixe o ZIP, extraia por cima da pasta atual da extensão (substituindo os arquivos) e clique em Recarregar. Suas configurações são mantidas.</span>
+  u.innerHTML = `<b>${L(`Versão ${esc(rel.tag)} disponível`, `Version ${esc(rel.tag)} available`, `Versión ${esc(rel.tag)} disponible`)}</b><span class="mut">${L(`Você está na ${esc(cur)}. Baixe o ZIP, extraia por cima da pasta atual da extensão (substituindo os arquivos) e clique em Recarregar. Suas configurações são mantidas.`, `You are on ${esc(cur)}. Download the ZIP, extract it over the current extension folder (replacing the files) and click Reload. Your settings are kept.`, `Estás en la ${esc(cur)}. Descarga el ZIP, extráelo sobre la carpeta actual de la extensión (reemplazando los archivos) y haz clic en Recargar. Tu configuración se conserva.`)}</span>
     <a class="btn sm" href="${esc(rel.url)}" target="_blank" rel="noopener noreferrer">O que mudou</a><a class="btn sm acc" href="${esc(rel.zip)}" target="_blank" rel="noopener noreferrer">Baixar</a><button class="btn sm" id="updReload">Recarregar</button>`;
   u.hidden = false;
   $('updReload').onclick = () => chrome.runtime.reload();
@@ -89,7 +109,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (ch.logs) renderLog();
   if (ch.schema) renderFilterGrid();
   if (ch.filters) renderFilters();
-  if (ch.cfg) { setTheme(); refreshInputs(); sync(); renderFilterHint(); }
+  if (ch.cfg) { setTheme(); if (st.cfg.lang && st.cfg.lang !== I18N.get()) setLang(st.cfg.lang); refreshInputs(); sync(); renderFilterHint(); }
   if (ch.galCfg || ch.relCfg) { if (page === 'gal' || page === 'rel') renderPage(); syncBars(); }
   if (ch.events || ch.bank || ch.prices || ch.reqs || ch.galBuys) {
     renderRisk();
@@ -163,7 +183,7 @@ function buildStatic() {
   $('cNo').onclick = () => snipeCmd('confirm', { v: false }).catch(e => toast(e.message, 'bad'));
   document.addEventListener('click', e => {
     const dl = e.target.closest('[data-logdl]'), cl = e.target.closest('[data-logclr]');
-    if (dl) { const s = dl.dataset.logdl; download(`fut-bots-log-${s}.txt`, logsOf(s).map(l => `${new Date(l.t).toLocaleString('pt-BR')}  [${srcName(l.src)}] ${l.m}`).join('\r\n'), 'text/plain'); }
+    if (dl) { const s = dl.dataset.logdl; download(`fut-bots-log-${s}.txt`, logsOf(s).map(l => `${new Date(l.t).toLocaleString(FSB.loc())}  [${srcName(l.src)}] ${I18N.trLog(l.m)}`).join('\r\n'), 'text/plain'); }
     if (cl) clearData('logs', cl.dataset.logclr === 'all' ? '' : cl.dataset.logclr);
   });
   buildFilterUi();
@@ -197,8 +217,8 @@ function sync() {
   $('fallback').closest('.field').hidden = c.dest === 'keep';
   const ex = c.mode === 'price' ? c.maxBuy : 1000;
   const mp = ladderUp(Math.ceil(ex * (1 + c.sellPct / 100) / 0.95));
-  $('sellHint').innerHTML = c.sellHow === 'margin' ? `Ex.: comprou por <b>${fmt(ex)}</b> → anuncia por <b>${fmt(mp)}</b> (recebe ${fmt(net(mp))} depois dos 5% do EA).`
-    : c.sellHow === 'fixed' ? (c.sellPrice ? `Anuncia por <b>${fmt(c.sellPrice)}</b> e recebe <b>${fmt(net(c.sellPrice))}</b> depois dos 5% do EA.` : (c.mode === 'profit' ? 'Preço 0 = vende pelo preço de mercado que o bot conferiu.' : '<span class="warn">Defina o preço de venda.</span>'))
+  $('sellHint').innerHTML = c.sellHow === 'margin' ? L(`Ex.: comprou por <b>${fmt(ex)}</b> → anuncia por <b>${fmt(mp)}</b> (recebe ${fmt(net(mp))} depois dos 5% do EA).`, `E.g. bought for <b>${fmt(ex)}</b> → lists for <b>${fmt(mp)}</b> (you get ${fmt(net(mp))} after the EA 5% tax).`, `Ej.: compraste por <b>${fmt(ex)}</b> → publica por <b>${fmt(mp)}</b> (recibes ${fmt(net(mp))} después del 5% de EA).`)
+    : c.sellHow === 'fixed' ? (c.sellPrice ? L(`Anuncia por <b>${fmt(c.sellPrice)}</b> e recebe <b>${fmt(net(c.sellPrice))}</b> depois dos 5% do EA.`, `Lists for <b>${fmt(c.sellPrice)}</b> and you get <b>${fmt(net(c.sellPrice))}</b> after the EA 5% tax.`, `Publica por <b>${fmt(c.sellPrice)}</b> y recibes <b>${fmt(net(c.sellPrice))}</b> después del 5% de EA.`) : (c.mode === 'profit' ? 'Preço 0 = vende pelo preço de mercado que o bot conferiu.' : '<span class="warn">Defina o preço de venda.</span>'))
     : 'Usa o botão "Mais barato" do Paletools e anuncia logo abaixo do mais barato.';
   $('bLimit').textContent = c.maxBuys ? fmt(c.maxBuys) : '∞';
   $('bSell').textContent = destName(c);
@@ -237,7 +257,7 @@ function renderStatus() {
   // o que está rodando
   const o = status && status.owner;
   $('runbox').hidden = !o;
-  if (o) $('runT').textContent = `${(MODS[o] || {}).name || o}: ${status.what}${status.since ? ` · ${Math.max(0, Math.floor((Date.now() - status.since) / 6e4))} min` : ''}${status.stopping ? ' · parando…' : ''}`;
+  if (o) $('runT').textContent = `${tr((MODS[o] || {}).name || o)}: ${tr(status.what)}${status.since ? ` · ${Math.max(0, Math.floor((Date.now() - status.since) / 6e4))} min` : ''}${status.stopping ? ' · parando…' : ''}`;
   for (const b of $('nav').querySelectorAll('button')) {
     const live = o && ((o === 'snipe' && b.dataset.page === 'sniper') || (o === 'gal' && b.dataset.page === 'gal') || (o === 'rel' && b.dataset.page === 'rel'));
     let dot = b.querySelector('.live');
@@ -276,13 +296,14 @@ function profitToday() {
 }
 
 // ---------- log ----------
-const srcName = s => (MODS[s] || {}).name || 'Geral';
+const srcName = s => tr((MODS[s] || {}).name || 'Geral');
 const logsOf = s => s && s !== 'all' ? st.logs.filter(l => (l.src || 'snipe') === s) : st.logs;
 function renderLog() {
   for (const el of document.querySelectorAll('.log[data-src]')) {
     const s = el.dataset.src, all = s === 'all';
     const stick = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
-    el.innerHTML = logsOf(s).slice(-300).map(l => `<div class="${l.c}"><time>${new Date(l.t).toLocaleTimeString('pt-BR')}</time>${all ? `<span class="src">${srcName(l.src || 'snipe')}</span>` : ''}${esc(l.m)}</div>`).join('') || '<div class="empty">Nada por aqui ainda.</div>';
+    if (!el.hasAttribute('data-notr')) el.setAttribute('data-notr', '');
+    el.innerHTML = logsOf(s).slice(-300).map(l => `<div class="${l.c}"><time>${new Date(l.t).toLocaleTimeString(FSB.loc())}</time>${all ? `<span class="src">${srcName(l.src || 'snipe')}</span>` : ''}${esc(I18N.trLog(l.m))}</div>`).join('') || `<div class="empty">${tr('Nada por aqui ainda.')}</div>`;
     if (stick) el.scrollTop = el.scrollHeight;
   }
 }
@@ -344,10 +365,10 @@ function renderFilterGrid() {
   $('pName').value = st.draft.player || '';
   const g = $('fGrid'), sc = st.schema;
   if (!sc || !sc.ctls.length) {
-    g.innerHTML = `<div class="empty" style="grid-column:1/-1">Abra <b>Transfer. → Pesquisar no Mercado</b> no Web App e clique em <b>Ler do Web App</b> para montar o filtro aqui (qualidade, raridade, posição, estilos, nação, liga, clube…).${st.draft.raw ? '<br>Um filtro copiado da tela já está pronto para salvar.' : ''}</div>`;
+    g.innerHTML = `<div class="empty" style="grid-column:1/-1">${L('Abra <b>Transfer. → Pesquisar no Mercado</b> no Web App e clique em <b>Ler do Web App</b> para montar o filtro aqui (qualidade, raridade, posição, estilos, nação, liga, clube…).', 'Open <b>Transfers → Search the Transfer Market</b> in the Web App and click <b>Read from Web App</b> to build the filter here (quality, rarity, position, chemistry style, nation, league, club…).', 'Abre <b>Transferencias → Buscar en el Mercado</b> en la Web App y haz clic en <b>Leer de la Web App</b> para armar el filtro aquí (calidad, rareza, posición, estilos, nación, liga, club…).')}${st.draft.raw ? '<br>' + L('Um filtro copiado da tela já está pronto para salvar.', 'A filter copied from the screen is ready to save.', 'Un filtro copiado de la pantalla está listo para guardar.') : ''}</div>`;
     return;
   }
-  g.innerHTML = sc.ctls.map((c, i) => `<div class="fc"><small>${esc(c.label)}</small><select data-i="${i}" class="${st.draft.sel[i] ? 'set' : ''}"><option value="">Qualquer</option>${c.options.map(o => `<option${st.draft.sel[i] === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`).join('');
+  g.innerHTML = sc.ctls.map((c, i) => `<div class="fc"><small>${esc(c.label)}</small><select data-i="${i}" class="${st.draft.sel[i] ? 'set' : ''}"><option value="">${tr('Qualquer')}</option>${c.options.map(o => `<option${st.draft.sel[i] === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`).join('');
   g.onchange = e => { const s = e.target.closest('select'); if (!s) return; if (s.value) st.draft.sel[s.dataset.i] = s.value; else delete st.draft.sel[s.dataset.i]; s.className = s.value ? 'set' : ''; save('draft'); renderFilterHint(); };
   renderFilterHint();
 }
@@ -356,18 +377,20 @@ function renderFilterHint() {
   const h = $('fHint'), sc = st.schema;
   if (!h) return;
   if (!sc || !sc.ctls.length) { h.innerHTML = ''; return; }
-  const age = Date.now() - (sc.t || 0), ago = age < HOUR ? 'há menos de 1 h' : age < DAY ? `há ${Math.floor(age / HOUR)} h` : `há ${Math.floor(age / DAY)} dia(s)`;
+  const age = Date.now() - (sc.t || 0), hh = Math.floor(age / HOUR), dd = Math.floor(age / DAY);
+  const ago = age < HOUR ? L('há menos de 1 h', 'less than 1 h ago', 'hace menos de 1 h') : age < DAY ? L(`há ${hh} h`, `${hh} h ago`, `hace ${hh} h`) : L(`há ${dd} dia(s)`, `${dd} day(s) ago`, `hace ${dd} día(s)`);
   const any = st.draft.player || Object.values(st.draft.sel || {}).some(Boolean);
-  const use = st.cfg.rotateFilters ? 'Com <b>Alternar</b> ligado, o Sniper usa os filtros salvos.'
-    : any ? `Ao clicar em Snipar, o Sniper aplica <b>este filtro</b> no Web App: ${esc(describe(draftFilter('')))}.`
-    : 'Nada escolhido aqui: o Sniper usa o filtro que estiver na tela do Web App.';
-  h.innerHTML = `${use} Listas lidas ${ago}; raridades e eventos novos entram sozinhos quando aparecem no Web App, e as listas são lidas de novo a cada 12 h.`;
+  const d = esc(describe(draftFilter('')));
+  const use = st.cfg.rotateFilters ? L('Com <b>Alternar</b> ligado, o Sniper usa os filtros salvos.', 'With <b>Rotate</b> on, the Sniper uses the saved filters.', 'Con <b>Alternar</b> activado, el Sniper usa los filtros guardados.')
+    : any ? L(`Ao clicar em Snipar, o Sniper aplica <b>este filtro</b> no Web App: ${d}.`, `When you click Snipe, the Sniper applies <b>this filter</b> to the Web App: ${d}.`, `Al hacer clic en Snipear, el Sniper aplica <b>este filtro</b> en la Web App: ${d}.`)
+    : L('Nada escolhido aqui: o Sniper usa o filtro que estiver na tela do Web App.', 'Nothing picked here: the Sniper uses whatever filter is on the Web App screen.', 'Nada elegido aquí: el Sniper usa el filtro que esté en la pantalla de la Web App.');
+  h.innerHTML = `${use} ${L(`Listas lidas ${ago}; raridades e eventos novos entram sozinhos quando aparecem no Web App, e as listas são lidas de novo a cada 12 h.`, `Lists read ${ago}; new rarities and events are added automatically when they show up in the Web App, and the lists are re-read every 12 h.`, `Listas leídas ${ago}; las rarezas y eventos nuevos se agregan solos cuando aparecen en la Web App, y las listas se vuelven a leer cada 12 h.`)}`;
 }
 function renderFilters() {
   $('flist').innerHTML = st.filters.length ? st.filters.map(f => `
     <div class="fi" data-id="${f.id}">
       <input type="checkbox" ${f.on ? 'checked' : ''} title="Usar ao alternar filtros">
-      <div class="n"><b>${esc(f.name)}</b><span>${esc(describe(f))}${f.mode === 'profit' ? ` · lucro ${f.profitPct}%` : ''}${f.minBuy ? ` · mín. ${fmt(f.minBuy)}` : ''}${f.dest ? ` · ${destName(f)}` : ''}</span></div>
+      <div class="n"><b data-notr>${esc(f.name)}</b><span>${esc(describe(f))}${f.mode === 'profit' ? ` · lucro ${f.profitPct}%` : ''}${f.minBuy ? ` · mín. ${fmt(f.minBuy)}` : ''}${f.dest ? ` · ${destName(f)}` : ''}</span></div>
       <input type="number" value="${f.maxBuy || ''}" placeholder="oferta" title="Valor de oferta deste filtro (vazio = o do painel)">
       <button data-a="use" title="Aplicar no Web App">▶</button><button data-a="edit" title="Carregar no editor">✎</button><button data-a="del" title="Apagar">✕</button>
     </div>`).join('') : '<div class="empty">Nenhum filtro salvo. Monte um ao lado e clique em Salvar filtro.</div>';
@@ -419,7 +442,7 @@ function applyPreset(id) {
 }
 
 // ---------- gráfico de linha (uma série, crosshair + tooltip) ----------
-const dfmt = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const dfmt = t => new Date(t).toLocaleString(FSB.loc(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 function lineChart(el, pts, { label = '', yfmt = fmt, extra = () => '' } = {}) {
   if (pts.length < 2) { el.innerHTML = `<div class="empty">Ainda não há dados suficientes para o gráfico${label ? ' de ' + esc(label) : ''}.</div>`; return; }
   const W = 760, H = 230, L = 64, R = 14, Tp = 12, B = 26;
@@ -522,7 +545,7 @@ function renderPage() {
         <div class="g2">
           <div class="card"><div class="ch"><h3>Snipe por filtro</h3></div>
             ${Object.keys(byF).length ? `<div class="tbl"><table><tr><th>Filtro</th><th class="r">Compras</th><th class="r">Gasto</th><th class="r">Lucro est.</th><th class="r">ROI</th><th class="r">Acerto</th><th class="r">Simuladas</th><th class="r">Projetado</th></tr>
-              ${Object.entries(byF).map(([f, a]) => { const x = stats(a); return `<tr><td>${esc(f)}</td><td class="r">${x.bought.length}</td><td class="r">${fmt(x.spent)}</td><td class="r ${x.profit >= 0 ? 'good' : 'bad'}">${fmt(x.profit)}</td><td class="r">${pct(x.roi)}</td><td class="r">${pct(x.hit)}</td><td class="r">${x.dry.length}</td><td class="r">${fmt(x.dryProfit)}</td></tr>`; }).join('')}
+              ${Object.entries(byF).map(([f, a]) => { const x = stats(a); return `<tr><td data-notr>${esc(f)}</td><td class="r">${x.bought.length}</td><td class="r">${fmt(x.spent)}</td><td class="r ${x.profit >= 0 ? 'good' : 'bad'}">${fmt(x.profit)}</td><td class="r">${pct(x.roi)}</td><td class="r">${pct(x.hit)}</td><td class="r">${x.dry.length}</td><td class="r">${fmt(x.dryProfit)}</td></tr>`; }).join('')}
             </table></div>` : '<div class="empty">Sem compras do Snipe no período.</div>'}
           </div>
           <div class="card"><div class="ch"><h3>Últimos problemas</h3><button class="link" data-goto="hist">ver tudo</button></div>
@@ -541,12 +564,12 @@ function renderPage() {
       <div class="flt" style="margin-bottom:12px">
         <select id="hMod" style="width:150px"><option value="">Todos os módulos</option><option value="snipe"${dash.mod === 'snipe' ? ' selected' : ''}>Snipe</option><option value="gal"${dash.mod === 'gal' ? ' selected' : ''}>Galeria</option></select>
         <select id="hKind" style="width:170px"><option value="">Todos os resultados</option>${Object.entries(KIND).map(([k, [t]]) => `<option value="${k}"${dash.kind === k ? ' selected' : ''}>${t}</option>`).join('')}</select>
-        <select id="hFilter" style="width:200px"><option value="">Todos os filtros / times</option>${filters.map(f => `<option${dash.filter === f ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select>
+        <select id="hFilter" style="width:200px" data-notr><option value="">Todos os filtros / times</option>${filters.map(f => `<option${dash.filter === f ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select>
         ${periodSel()}<span class="riskwhy">${list.length} registro(s)</span><span class="flex"></span>
         <button class="btn" id="hCsv">Exportar CSV</button><button class="btn danger" id="hClr">Apagar histórico do Snipe</button></div>
       <div class="card"><div class="tbl" style="max-height:calc(100vh - 290px)">${list.length ? `<table>
         <tr><th>Quando</th><th>Módulo</th><th>Resultado</th><th>Jogador</th><th class="r">Preço</th><th class="r">Venda</th><th class="r">Lucro</th><th>Filtro / time</th><th>Detalhe</th></tr>
-        ${list.map(e => `<tr><td>${esc(dfmt(e.t))}</td><td>${srcName(e.mod)}</td><td>${tagOf(e.kind)}</td><td>${esc(e.name ? `${e.name} ${e.rating || ''}` : '')}</td><td class="r">${e.price ? fmt(e.price) : ''}</td><td class="r">${e.sale ? fmt(e.sale) : ''}</td><td class="r ${e.profit > 0 ? 'good' : e.profit < 0 ? 'bad' : ''}">${e.profit != null ? fmt(e.profit) : ''}</td><td>${esc(e.filter || '')}</td><td>${esc(e.why || '')}</td></tr>`).join('')}
+        ${list.map(e => `<tr><td>${esc(dfmt(e.t))}</td><td>${srcName(e.mod)}</td><td>${tagOf(e.kind)}</td><td>${esc(e.name ? `${e.name} ${e.rating || ''}` : '')}</td><td class="r">${e.price ? fmt(e.price) : ''}</td><td class="r">${e.sale ? fmt(e.sale) : ''}</td><td class="r ${e.profit > 0 ? 'good' : e.profit < 0 ? 'bad' : ''}">${e.profit != null ? fmt(e.profit) : ''}</td><td data-notr>${esc(e.filter || '')}</td><td>${esc(e.why || '')}</td></tr>`).join('')}
       </table>` : '<div class="empty">Nada registrado com esses filtros.</div>'}</div></div>`;
     bindPeriod();
     $('hMod').onchange = () => { dash.mod = $('hMod').value; renderPage(); };
@@ -555,7 +578,7 @@ function renderPage() {
     $('hCsv').onclick = () => {
       const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
       const lines = [['data', 'modulo', 'resultado', 'jogador', 'overall', 'preco', 'venda', 'lucro', 'filtro', 'detalhe'].join(';'),
-        ...list.slice().reverse().map(e => [new Date(e.t).toLocaleString('pt-BR'), srcName(e.mod), KIND[e.kind] ? KIND[e.kind][0] : e.kind, e.name, e.rating, e.price, e.sale, e.profit, e.filter, e.why].map(q).join(';'))];
+        ...list.slice().reverse().map(e => [new Date(e.t).toLocaleString(FSB.loc()), srcName(e.mod), KIND[e.kind] ? KIND[e.kind][0] : e.kind, e.name, e.rating, e.price, e.sale, e.profit, e.filter, e.why].map(q).join(';'))];
       download('fut-bots-historico.csv', lines.join('\r\n'), 'text/csv');
     };
     $('hClr').onclick = () => { if (confirm('Apagar todo o histórico do Snipe (compras e ocorrências)? O lucro da Galeria fica na página Galeria.')) clearData('events'); };
@@ -566,7 +589,7 @@ function renderPage() {
     const day = all.filter(p => Date.now() - p.t < DAY).map(p => p.p);
     el.innerHTML = `
       <div class="ph"><div><h2>Mercado</h2><p>Menor preço visto por filtro, coletado enquanto o Snipe busca.</p></div><span class="flex"></span>
-        <select id="mKey" style="width:240px">${keys.length ? keys.map(k => `<option${k === dash.mkt ? ' selected' : ''}>${esc(k)}</option>`).join('') : '<option value="">(sem dados ainda)</option>'}</select>
+        <select id="mKey" style="width:240px" data-notr>${keys.length ? keys.map(k => `<option${k === dash.mkt ? ' selected' : ''}>${esc(k)}</option>`).join('') : '<option value="">(sem dados ainda)</option>'}</select>
         ${periodSel()}<button class="btn acc" id="mCheck">Conferir o preço do filtro da tela</button></div>
       <div class="grid">
         <div class="tiles">
@@ -619,7 +642,7 @@ function renderPage() {
           <div class="tile"><small>Oferta máx. para ${sv.pct}%</small><b>${fmt(maxFor)}</b><span>vendendo a ${fmt(sv.sell)}</span></div>
         </div>
         ${warn.length ? `<div class="card warn">${esc(warn.join(' · '))}</div>` : '<div class="card good">Operação com lucro e dentro do orçamento.</div>'}
-        <div class="riskwhy">Para testar uma estratégia sem gastar, use o modo <b>Teste</b> do Sniper: ele faz as buscas reais, mas só registra o que compraria (Dashboard → Carteira virtual).</div>
+        <div class="riskwhy">${L('Para testar uma estratégia sem gastar, use o modo <b>Teste</b> do Sniper: ele faz as buscas reais, mas só registra o que compraria (Dashboard → Carteira virtual).', 'To try a strategy without spending, use the Sniper <b>Test</b> mode: it runs real searches but only records what it would buy (Dashboard → Virtual wallet).', 'Para probar una estrategia sin gastar, usa el modo <b>Prueba</b> del Sniper: hace búsquedas reales pero solo registra lo que compraría (Panel → Cartera virtual).')}</div>
       </div>`;
     const upd = () => { sv.buy = num($('sBuy').value) || 0; sv.sell = num($('sSell').value) || 0; sv.budget = num($('sBud').value) || 0; sv.pct = num($('sPct').value) || 0; renderPage(); };
     for (const id of ['sBuy', 'sSell', 'sBud', 'sPct']) $(id).onchange = upd;

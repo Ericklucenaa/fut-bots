@@ -56,6 +56,11 @@ nav button .live{margin-left:auto;width:7px;height:7px;border-radius:50%;backgro
 .runbox .pulse{width:8px;height:8px;border-radius:50%;background:var(--good);animation:pulse 1.2s infinite}
 .runbox .btn{height:28px}
 @keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--good) 0%,transparent);opacity:.6}}
+.langsel{display:flex;align-items:center;gap:2px;margin-left:6px;padding:3px 3px 3px 9px;border-radius:9px;background:var(--bg2);border:1px solid var(--line);color:var(--mut)}
+.langsel svg{margin-right:4px}
+.langsel button{padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;color:var(--mut)}
+.langsel button:hover{color:var(--tx)}
+.langsel button.on{background:var(--bg3);color:var(--tx)}
 .hstat{text-align:right;padding-left:14px;border-left:1px solid var(--line)}
 .hstat small{display:block;font-size:11px;color:var(--mut)}
 .hstat b{font:600 15px/1.25 var(--disp);font-variant-numeric:tabular-nums}

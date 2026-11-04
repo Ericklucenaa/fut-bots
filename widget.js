@@ -54,7 +54,9 @@
   </div>
 </div>`;
   const $ = id => sh.getElementById(id);
-  const paint = () => FSB.applyTheme(host, D.cfg.theme);
+  const tr = s => I18N.tr(s);
+  const lang = () => { I18N.set(D.cfg.lang || I18N.detect()); FSB.setLoc(I18N.LOCALES[I18N.get()]); };
+  const paint = () => { FSB.applyTheme(host, D.cfg.theme); lang(); };
   paint();
   F.onChange(keys => { if (keys.includes('cfg')) paint(); soon(); });
 
@@ -64,22 +66,24 @@
     if (!$('go')) return;
     const s = st(), o = owner();
     const shown = o || pick;
+    for (const b of $('seg').children) b.textContent = tr(MODS[b.dataset.m].name);
+    $('open').title = tr('Abrir o painel'); $('min').title = tr('Minimizar'); $('cfY').textContent = tr('Comprar'); $('cfN').textContent = tr('Pular');
     for (const b of $('seg').children) { b.classList.toggle('on', b.dataset.m === shown); b.classList.toggle('run', b.dataset.m === o); b.disabled = !!o && b.dataset.m !== o; }
     const test = shown === 'snipe' ? D.cfg.run === 'test' : shown === 'gal' ? D.galCfg.dryRun : false;
     $('dot').className = 'dot' + (o ? (test ? ' test' : ' on') : '');
     $('go').classList.toggle('stop', !!o);
-    $('go').textContent = o ? (F.run.stopReq ? 'Parando…' : 'Parar') : shown === 'snipe' ? (D.cfg.run === 'test' ? 'Testar' : 'Snipar') : shown === 'gal' ? (D.galCfg.dryRun ? 'Testar' : 'Iniciar') : 'Relistar';
+    $('go').textContent = tr(o ? (F.run.stopReq ? 'Parando…' : 'Parar') : shown === 'snipe' ? (D.cfg.run === 'test' ? 'Testar' : 'Snipar') : shown === 'gal' ? (D.galCfg.dryRun ? 'Testar' : 'Iniciar') : 'Relistar');
     let k = '';
-    if (shown === 'snipe' && s.snipe) { const S = s.snipe.S; k = `<span>Buscas <b>${fmt(S.searches)}</b></span><span>Compras <b>${fmt(D.cfg.run === 'test' ? S.dry : S.bought)}</b></span><span>Gasto <b>${fmt(S.spent)}</b></span>`; }
-    if (shown === 'gal' && s.gal) { const G = s.gal.G, g = s.gal.gallery; k = g ? `<span><b>${g.sel}/${g.req ?? '?'}</b> ${escH(g.set)}</span><span>Faltam <b>${g.toBuy ?? '?'}</b></span>` : `<span>Compras <b>${fmt(G.bought)}</b></span><span>Gasto <b>${fmt(G.spent)}</b></span>`; }
-    if (shown === 'rel' && s.rel) k = `<span>Listados <b>${fmt(s.rel.R.listed)}</b></span><span>${s.onTL ? 'na Lista de Transf.' : 'abre a Lista sozinho'}</span>`;
+    if (shown === 'snipe' && s.snipe) { const S = s.snipe.S; k = `<span>${tr('Buscas')} <b>${fmt(S.searches)}</b></span><span>${tr('Compras')} <b>${fmt(D.cfg.run === 'test' ? S.dry : S.bought)}</b></span><span>${tr('Gasto')} <b>${fmt(S.spent)}</b></span>`; }
+    if (shown === 'gal' && s.gal) { const G = s.gal.G, g = s.gal.gallery; k = g ? `<span><b>${g.sel}/${g.req ?? '?'}</b> ${escH(g.set)}</span><span>${tr('Faltam')} <b>${g.toBuy ?? '?'}</b></span>` : `<span>${tr('Compras')} <b>${fmt(G.bought)}</b></span><span>${tr('Gasto')} <b>${fmt(G.spent)}</b></span>`; }
+    if (shown === 'rel' && s.rel) k = `<span>${tr('Listados')} <b>${fmt(s.rel.R.listed)}</b></span><span>${tr(s.onTL ? 'na Lista de Transf.' : 'abre a Lista sozinho')}</span>`;
     $('k').innerHTML = k;
     const p = s.snipe && s.snipe.pending;
     $('cf').hidden = !p;
     if (p) $('cfT').textContent = `${p.name} · ${fmt(p.price)} · ${p.left}s`;
     const L = D.logs, l = L[L.length - 1];
     const line = (o === 'snipe' && s.snipe.S.last) || (o === 'gal' && s.gal.G.line) || (o === 'rel' && s.rel.R.line) || '';
-    $('last').textContent = line || (l ? l.m : 'pronto');
+    $('last').textContent = line ? tr(line) : (l ? I18N.trLog(l.m) : tr('pronto'));
     $('last').className = 'last ' + (line ? '' : (l && l.c) || '');
   }
   const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
