@@ -362,10 +362,11 @@ PAGES.docs = () => {
     <h3>Sniper</h3>
     <ol>
       <li>No Web App, abra <b>Transfer. → Pesquisar no Mercado</b> (jogadores ou consumíveis).</li>
-      <li>No Sniper, clique em <b>Ler do Web App</b> e monte o filtro, ou monte direto no Web App e use <b>Copiar da tela</b>.</li>
+      <li>No Sniper, clique em <b>Ler do Web App</b> e monte o filtro, ou monte direto no Web App e use <b>Copiar da tela</b>. Ao clicar em <b>Snipar</b>, o filtro do painel é aplicado no Web App; se nada estiver escolhido no painel, vale o que está na tela.</li>
       <li>Defina o <b>valor de oferta</b> (ou <b>% de lucro</b>), o que fazer <b>depois de comprar</b> e o ritmo.</li>
       <li>Escolha <b>Teste</b>, <b>Assistido</b> ou <b>Automático</b> na barra de baixo e clique em <b>Snipar</b>.</li>
     </ol>
+    <p>As listas do filtro (raridades, eventos, ligas) se atualizam sozinhas: opções novas entram quando aparecem no Web App, e o Sniper lê as listas de novo a cada 12 h.</p>
     <p>Quando alguém compra antes ("Status do lance alterado…"), o Sniper tenta a próxima oferta e volta a buscar, sem parar. Avisos de limite do EA pausam o snipe por alguns minutos; três avisos em 15 minutos param de vez.</p>
     <h3>Galeria</h3>
     <ol>

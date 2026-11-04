@@ -61,7 +61,8 @@ Só **um módulo trabalha por vez**. O topo do painel mostra quem está rodando 
 ## Sniper
 
 1. No Web App, abra **Transfer. → Pesquisar no Mercado** (jogadores ou consumíveis).
-2. No painel → **Sniper**, clique em **Ler do Web App** e monte o filtro aqui, ou monte no Web App e clique em **Copiar da tela**. Dá para salvar vários filtros e alternar entre eles.
+2. No painel → **Sniper**, clique em **Ler do Web App** e monte o filtro aqui, ou monte no Web App e clique em **Copiar da tela**. Ao clicar em **Snipar**, o filtro do painel é aplicado no Web App (se nada estiver escolhido no painel, vale o que está na tela). Dá para salvar vários filtros e alternar entre eles.
+   - As listas do filtro se atualizam sozinhas: raridades e eventos novos entram quando aparecem no Web App, e as listas são lidas de novo a cada 12 horas.
 3. Defina a **oferta**: preço fixo ou **% de lucro** sobre o preço de mercado (o bot confere o mercado sozinho).
 4. Escolha **depois de comprar**: Clube, Lista de transf., Não atribuídos ou Vender (Mais barato do Paletools, preço fixo ou % sobre o que pagou). Cada filtro salvo guarda o próprio destino.
 5. Ajuste o ritmo (velocidade, buscas por rodada, descanso, limite diário) ou carregue uma **estratégia** pronta.

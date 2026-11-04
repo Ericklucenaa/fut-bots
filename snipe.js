@@ -76,7 +76,7 @@
   }
   async function resetFilter() {
     const root = searchRoot();
-    const b = root && [...root.querySelectorAll('button')].find(x => vis(x) && T.reset.test(btnText(x)));
+    const b = root && [...root.querySelectorAll('button')].find(x => vis(x) && !mine(x) && RESET.test(btnText(x)));
     if (!b) return false;
     const before = filterControls().map(ctlText).join('|');
     click(b);
@@ -84,6 +84,7 @@
     await sleep(150);
     return true;
   }
+  const RESET = /^(Redefinir|Reset|Restablecer|Reiniciar)$/i;
   // item "Qualquer" da lista (aparece abreviado, ex.: "Qualq.")
   const ANY = /^(qualq|qualquer|any|cualq|cualquiera|todos|todas|all)\b/i;
   const STD = ['Qualidade', 'Raridade', 'Posição', 'Estilos de entrosamento', 'Nação', 'Liga', 'Clube', 'Estilos de jogo'];
@@ -96,10 +97,39 @@
   }
   // volta uma caixa para "Qualquer" (quando o botão Redefinir não existe ou não funcionou)
   async function clearCtl(c) {
+    const x = [...c.querySelectorAll('button, span, i, div')].find(e => vis(e) && !e.children.length && /^[×✕✖xX]$/.test(norm(e.textContent)))
+      || [...c.querySelectorAll('[class*="clear"], [class*="Clear"], [class*="remove"]')].find(vis);
+    if (x) { const before = ctlText(c); click(x); if (await waitFor(() => ctlText(c) !== before, 1200)) { await sleep(200); return; } }
     click(ctlRow(c));
     const any = await waitFor(() => [...c.querySelectorAll('li, .with-icon')].find(li => vis(li) && ANY.test(norm(li.textContent))), 1500);
     if (any) { click(any); await sleep(250); } else click(ctlRow(c));
   }
+  // ---------- listas do filtro (schema) ----------
+  let schema = null;
+  F.store.get(['schema'], r => { schema = r.schema || null; });
+  chrome.storage.onChanged.addListener((ch, area) => { if (area === 'local' && ch.schema) schema = ch.schema.newValue || null; });
+  // a lista guardada só vale se a tela tem as mesmas caixas (Atletas x Consumíveis têm caixas diferentes)
+  const schemaFits = () => !!(schema && schema.ctls && schema.ctls.length === filterControls().length);
+  // o texto mostrado na caixa i é um valor escolhido? (true / false / null = não sei)
+  const isPicked = (i, shown) => schemaFits() && schema.ctls[i] ? (schema.ctls[i].options.includes(shown) && shown !== schema.ctls[i].label) : null;
+  function saveSchema(sc) { schema = sc; try { F.store.set({ schema: sc }); } catch {} }
+  const listNew = (label, n) => `${label}: ${n.slice(0, 6).join(', ')}${n.length > 6 ? ` +${n.length - 6}` : ''}`;
+  // Acha opções novas (eventos de raridade novos etc.) sempre que as listas aparecem na tela, sem clicar em nada.
+  function scanNewOptions() {
+    if (F.isBusy() || !schemaFits()) return;
+    const found = [];
+    filterControls().forEach((c, i) => {
+      const opts = ctlOptions(c).filter(o => !ANY.test(o));
+      if (opts.length < 2) return;
+      const known = new Set(schema.ctls[i].options), fresh = opts.filter(o => !known.has(o));
+      if (!fresh.length) return;
+      schema.ctls[i].options = [...opts, ...schema.ctls[i].options.filter(o => !opts.includes(o))];
+      found.push(listNew(schema.ctls[i].label, fresh));
+    });
+    if (found.length) { saveSchema({ ...schema, t: Date.now() }); log(`🆕 Opções novas no filtro → ${found.join(' · ')}`, 'good'); }
+  }
+  setInterval(() => { try { if (F.alive() && searchView()) scanNewOptions(); } catch {} }, 3000);
+
   // lê as caixas do filtro (nome + opções) para o painel montar os seus próprios menus
   async function readSchema() {
     await backToSearch();
@@ -118,9 +148,14 @@
     }
     const now = filterControls().map(ctlText);
     if (cur.player || cur.ctls.some((t, i) => t !== now[i])) await applyFilter({ ...cur, name: 'anterior' }, { reset: false });
-    const schema = { t: Date.now(), ctls: out };
-    try { F.store.set({ schema }); } catch {}
-    return schema;
+    // avisa o que é novo desde a última leitura
+    if (schema && schema.ctls && schema.ctls.length === out.length) {
+      const news = out.map((c, i) => { const k = new Set(schema.ctls[i].options); const n = c.options.filter(o => !k.has(o)); return n.length ? listNew(c.label, n) : ''; }).filter(Boolean);
+      if (news.length) log(`🆕 Opções novas no filtro → ${news.join(' · ')}`, 'good');
+    }
+    const sc = { t: Date.now(), ctls: out };
+    saveSchema(sc);
+    return sc;
   }
   async function suggestPlayers(q) {
     await backToSearch();
@@ -145,16 +180,30 @@
     click(exact || opts[0]); await pause(0.8);
   }
   // f = { name, player, playerRating, ctls: [texto desejado por caixa ou ''] }
+  // a tela já está com esse filtro?
+  function filterMatches(f) {
+    const cur = filterControls().map(ctlText), want = f.ctls || [];
+    const pi = playerInput(), pv = pi ? norm(pi.value).toLowerCase() : '';
+    if ((f.player || '').toLowerCase() !== pv) return false;
+    if (want.length !== cur.length) return false;
+    return want.every((w, i) => w ? cur[i] === w : isPicked(i, cur[i]) === false);
+  }
   async function applyFilter(f, { reset = true } = {}) {
     await backToSearch();
+    if (schemaFits() && filterMatches(f)) return false;
     const resetOk = reset ? await resetFilter() : true;
     const defs = filterControls().map(ctlText);
     if (f.player) await pickPlayer(f.player, f.playerRating);
+    else { const pi = playerInput(); if (pi && norm(pi.value)) { setInput(pi, ''); await sleep(150); } }
     for (let i = 0; i < (f.ctls || []).length; i++) {
       const want = f.ctls[i];
       const c = filterControls()[i];
       if (!want) {
-        if (!resetOk && c) { const shown = ctlText(c), o = (await openOptions(c)).filter(x => !ANY.test(x)); if (o.includes(shown)) await clearCtl(c); }
+        if (!c) continue;
+        const shown = ctlText(c);
+        let picked = isPicked(i, shown);
+        if (picked == null && !resetOk) picked = (await openOptions(c)).filter(x => !ANY.test(x)).includes(shown);
+        if (picked) await clearCtl(c);
         continue;
       }
       if (want === defs[i] || (c && ctlText(c) === want)) continue;
@@ -367,6 +416,16 @@
   const lim = () => D.cfg.maxBuys ? (D.cfg.run === 'test' ? S.dry : S.bought) >= D.cfg.maxBuys : false;
   const fatal = e => e instanceof Stop;
 
+  // filtro montado no painel (rascunho); null = usar o que está na tela do Web App
+  async function panelFilter() {
+    const r = await F.store.get(['draft', 'schema']);
+    const d = r.draft, sc = r.schema;
+    if (!d || !sc || !sc.ctls || !sc.ctls.length) return null;
+    const ctls = sc.ctls.map((_, i) => (d.sel && d.sel[i]) || '');
+    if (!d.player && !ctls.some(Boolean)) return null;   // nada escolhido no painel: respeita o filtro da tela
+    const desc = [d.player ? `${d.player}${d.playerRating ? ' ' + d.playerRating : ''}` : '', ...ctls.filter(Boolean)].filter(Boolean).join(' · ');
+    return { name: desc || 'Filtro do painel', player: d.player || '', playerRating: d.playerRating || null, ctls };
+  }
   async function snipe() {
     const cfg = D.cfg;
     Object.assign(S, { searches: 0, bought: 0, spent: 0, profit: 0, dry: 0, lost: 0, t0: Date.now(), offer: null, warnedMax: false, last: '' });
@@ -381,13 +440,30 @@
       if (cfg.dest === 'sell' && cfg.sellHow === 'fixed' && !cfg.sellPrice && cfg.mode !== 'profit') throw new Stop('Defina o preço de venda (Após comprar → Vender → Preço fixo).');
       const fl = cfg.rotateFilters ? D.filters.filter(f => f.on) : [];
       if (cfg.rotateFilters && !fl.length) throw new Stop('Marque pelo menos um filtro salvo ou desligue "Alternar filtros".');
+      // listas do filtro com mais de 12 h (ou nunca lidas): lê de novo para pegar raridades novas
+      if (!fl.length && (!schema || Date.now() - (schema.t || 0) > 12 * 36e5)) {
+        log('   atualizando as listas do filtro (raridades e eventos novos)…');
+        try { await readSchema(); } catch (e) { if (fatal(e)) throw e; log(`   não consegui atualizar as listas (${e.message}); sigo assim mesmo.`, 'warn'); }
+      }
+      // sem "Alternar filtros": vale o filtro montado no painel; se não tiver nada escolhido lá, vale o da tela
+      let baseName = 'Filtro da tela';
+      if (!fl.length) {
+        const pf = await panelFilter();
+        if (pf) {
+          baseName = pf.name;
+          for (let k = 1; ; k++) {
+            try { const changed = await applyFilter(pf); log(changed === false ? `🔎 Filtro do painel (já estava na tela): ${pf.name}` : `🔎 Filtro do painel aplicado: ${pf.name}`); break; }
+            catch (e) { if (fatal(e) || k >= 3) throw e; log(`   não consegui aplicar o filtro (${e.message}); tentando de novo…`, 'warn'); await recover().catch(() => {}); }
+          }
+        } else log('   nada escolhido no filtro do painel: uso o filtro que está na tela do Web App.');
+      }
       const runName = { test: 'TESTE (não compra)', assist: 'ASSISTIDO', real: 'AUTOMÁTICO' }[cfg.run];
       log(`▶ Snipe ${runName} · ${cfg.mode === 'profit' ? `por lucro (${cfg.profitPct}%)` : 'por preço'} · ${(SPEEDS[cfg.speed] || {}).name || ''}${fl.length ? ` · ${fl.length} filtro(s)` : ''}${cfg.maxBuys ? ` · até ${cfg.maxBuys} compra(s)` : ''} · após comprar: ${FSB.destName(cfg)}.`, 'good');
 
       let fi = -1, fails = 0, limitHits = [];
       for (let block = 0; ; block++) {
         let cur = null;
-        curFilter = 'Filtro da tela'; curMin = null; curDest = null;
+        curFilter = baseName; curMin = null; curDest = null;
         if (fl.length) {
           fi = (fi + 1) % fl.length; cur = fl[fi]; curFilter = cur.name; curMin = cur.minBuy != null ? cur.minBuy : null; curDest = cur.dest ? { dest: cur.dest, sellHow: cur.sellHow, sellPrice: cur.sellPrice, sellPct: cur.sellPct, fallback: cur.fallback } : null;
           if (block === 0 || fl.length > 1) {

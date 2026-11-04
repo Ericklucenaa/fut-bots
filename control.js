@@ -89,7 +89,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (ch.logs) renderLog();
   if (ch.schema) renderFilterGrid();
   if (ch.filters) renderFilters();
-  if (ch.cfg) { setTheme(); refreshInputs(); sync(); }
+  if (ch.cfg) { setTheme(); refreshInputs(); sync(); renderFilterHint(); }
   if (ch.galCfg || ch.relCfg) { if (page === 'gal' || page === 'rel') renderPage(); syncBars(); }
   if (ch.events || ch.bank || ch.prices || ch.reqs || ch.galBuys) {
     renderRisk();
@@ -308,7 +308,7 @@ function buildFilterUi() {
     if (f.maxBuy || f.minBuy) { saveCfg(); refreshInputs(); sync(); }
     save('draft'); renderFilterGrid(); toast(`Filtro copiado do Web App${f.maxBuy ? ` (oferta ${fmt(f.maxBuy)})` : ''}.`, 'good');
   });
-  $('fClear').onclick = () => { st.draft = { player: '', playerRating: null, sel: {} }; save('draft'); renderFilterGrid(); };
+  $('fClear').onclick = () => { st.draft = { player: '', playerRating: null, sel: {} }; save('draft'); renderFilterGrid(); toast('Filtro do painel limpo: o Sniper vai usar o filtro da tela do Web App.'); };
   $('fApply').onclick = () => act($('fApply'), async () => { await snipeCmd('apply', { filter: draftFilter('rascunho') }); toast('Filtro aplicado no Web App.', 'good'); });
   $('pSearch').onclick = () => act($('pSearch'), async () => {
     const q = norm($('pName').value);
@@ -348,7 +348,20 @@ function renderFilterGrid() {
     return;
   }
   g.innerHTML = sc.ctls.map((c, i) => `<div class="fc"><small>${esc(c.label)}</small><select data-i="${i}" class="${st.draft.sel[i] ? 'set' : ''}"><option value="">Qualquer</option>${c.options.map(o => `<option${st.draft.sel[i] === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`).join('');
-  g.onchange = e => { const s = e.target.closest('select'); if (!s) return; if (s.value) st.draft.sel[s.dataset.i] = s.value; else delete st.draft.sel[s.dataset.i]; s.className = s.value ? 'set' : ''; save('draft'); };
+  g.onchange = e => { const s = e.target.closest('select'); if (!s) return; if (s.value) st.draft.sel[s.dataset.i] = s.value; else delete st.draft.sel[s.dataset.i]; s.className = s.value ? 'set' : ''; save('draft'); renderFilterHint(); };
+  renderFilterHint();
+}
+// o que o Sniper vai usar ao clicar em Snipar + idade das listas
+function renderFilterHint() {
+  const h = $('fHint'), sc = st.schema;
+  if (!h) return;
+  if (!sc || !sc.ctls.length) { h.innerHTML = ''; return; }
+  const age = Date.now() - (sc.t || 0), ago = age < HOUR ? 'há menos de 1 h' : age < DAY ? `há ${Math.floor(age / HOUR)} h` : `há ${Math.floor(age / DAY)} dia(s)`;
+  const any = st.draft.player || Object.values(st.draft.sel || {}).some(Boolean);
+  const use = st.cfg.rotateFilters ? 'Com <b>Alternar</b> ligado, o Sniper usa os filtros salvos.'
+    : any ? `Ao clicar em Snipar, o Sniper aplica <b>este filtro</b> no Web App: ${esc(describe(draftFilter('')))}.`
+    : 'Nada escolhido aqui: o Sniper usa o filtro que estiver na tela do Web App.';
+  h.innerHTML = `${use} Listas lidas ${ago}; raridades e eventos novos entram sozinhos quando aparecem no Web App, e as listas são lidas de novo a cada 12 h.`;
 }
 function renderFilters() {
   $('flist').innerHTML = st.filters.length ? st.filters.map(f => `
