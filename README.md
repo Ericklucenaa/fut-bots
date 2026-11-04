@@ -75,7 +75,7 @@ Só **um módulo trabalha por vez**. O topo do painel mostra quem está rodando 
 | **Assistido** | Acha a oferta e espera você clicar em **Comprar** (no painel ou no widget). |
 | **Automático** | Compra sozinho. |
 
-Quando alguém compra antes ("Status do lance alterado…"), o Sniper tenta a próxima oferta e volta a buscar, **sem parar**. Um aviso de limite do EA pausa o snipe por alguns minutos; três avisos em 15 minutos param de vez.
+Quando alguém compra antes ("Status do lance alterado…"), o Sniper não tenta a próxima carta da lista (é um resultado velho): volta e faz uma pesquisa nova, **sem parar**. Um aviso de limite do EA pausa o snipe por alguns minutos; três avisos em 15 minutos param de vez.
 
 ---
 

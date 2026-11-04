@@ -98,7 +98,16 @@
     else { try { await F.command({ mod: pick, op: 'start' }); } catch (e) { F.log('⚠ ' + e.message, 'bad', pick); } }
     render();
   };
-  $('open').onclick = e => { e.stopPropagation(); try { chrome.runtime.sendMessage({ type: 'openControl' }); } catch {} };
+  // depois que a extensão é atualizada/recarregada, esta página fica "órfã" até ser recarregada (F5)
+  const L3 = (pt, en, es) => { const l = String(FSB.loc() || ''); return /^en/.test(l) ? en : /^es/.test(l) ? es : pt; };
+  const orphan = () => alert(L3('A extensão foi atualizada. Recarregue esta página (F5) para o botão voltar a funcionar.',
+    'The extension was updated. Reload this page (F5) to make the button work again.',
+    'La extensión se actualizó. Recarga esta página (F5) para que el botón vuelva a funcionar.'));
+  $('open').onclick = e => {
+    e.stopPropagation();
+    try { if (!chrome.runtime || !chrome.runtime.id) return orphan(); chrome.runtime.sendMessage({ type: 'openControl' }).catch(orphan); }
+    catch { orphan(); }
+  };
   $('cfY').onclick = () => F.command({ mod: 'snipe', op: 'confirm', v: true });
   $('cfN').onclick = () => F.command({ mod: 'snipe', op: 'confirm', v: false });
   const setMin = m => { $('w').classList.toggle('min', m); try { localStorage.setItem(POS + '_min', m ? '1' : ''); } catch {} };

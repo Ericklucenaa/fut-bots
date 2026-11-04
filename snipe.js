@@ -18,6 +18,17 @@
     if (ins.length < 4) return null;
     return { bidMin: ins[0], bidMax: ins[1], binMin: ins[2], binMax: ins[3] };
   }
+  // os 4 valores de preço do filtro (lance mín./máx., compre já mín./máx.); 0 = vazio
+  const PKEYS = ['bidMin', 'bidMax', 'binMin', 'binMax'];
+  function readPrices() {
+    const pf = priceFilters(); if (!pf) return null;
+    const o = {}; PKEYS.forEach(k => { o[k] = num(pf[k].value) || 0; }); return o;
+  }
+  async function writePrices(p) {
+    if (!p) return;
+    const pf = priceFilters(); if (!pf) return;
+    for (const k of PKEYS) { const v = p[k] || 0; if ((num(pf[k].value) || 0) !== v) { setInput(pf[k], v || ''); await sleep(60); } }
+  }
   let searchBtnCache = null;
   const searchBtn = () => {
     if (searchBtnCache && vis(searchBtnCache)) return searchBtnCache;
@@ -70,9 +81,9 @@
   const playerOpt = b => ({ name: norm((b.querySelector('.btn-text') || b).textContent), rating: num((b.querySelector('.btn-subtext') || {}).textContent) });
   function captureFilter() {
     if (!searchView()) throw new Error('Abra Transfer. → Pesquisar no Mercado no Web App.');
-    const pi = playerInput(), pf = priceFilters();
-    return { player: pi ? norm(pi.value) : '', ctls: filterControls().map(ctlText),
-      minBuy: (pf && num(pf.binMin.value)) || 0, maxBuy: (pf && num(pf.binMax.value)) || 0 };
+    const pi = playerInput(), pr = readPrices();
+    return { player: pi ? norm(pi.value) : '', ctls: filterControls().map(ctlText), prices: pr,
+      minBuy: (pr && pr.binMin) || 0, maxBuy: (pr && pr.binMax) || 0 };
   }
   async function resetFilter() {
     const root = searchRoot();
@@ -148,6 +159,7 @@
     }
     const now = filterControls().map(ctlText);
     if (cur.player || cur.ctls.some((t, i) => t !== now[i])) await applyFilter({ ...cur, name: 'anterior' }, { reset: false });
+    await writePrices(cur.prices);   // o Redefinir apaga os preços: devolve o que estava na tela
     // avisa o que é novo desde a última leitura
     if (schema && schema.ctls && schema.ctls.length === out.length) {
       const news = out.map((c, i) => { const k = new Set(schema.ctls[i].options); const n = c.options.filter(o => !k.has(o)); return n.length ? listNew(c.label, n) : ''; }).filter(Boolean);
@@ -190,7 +202,7 @@
   }
   async function applyFilter(f, { reset = true } = {}) {
     await backToSearch();
-    if (schemaFits() && filterMatches(f)) return false;
+    if (schemaFits() && filterMatches(f)) { await writePrices(f.prices); return false; }
     const resetOk = reset ? await resetFilter() : true;
     const defs = filterControls().map(ctlText);
     if (f.player) await pickPlayer(f.player, f.playerRating);
@@ -213,6 +225,7 @@
       if (!opt) { click(ctlRow(c)); throw new Stop(`Não achei a opção "${want}" no filtro.`); }
       click(opt); await pause(0.6);
     }
+    await writePrices(f.prices);
   }
 
   // ---------- resultados e compra ----------
@@ -256,11 +269,12 @@
     return best;
   }
 
-  // Compra a oferta mais barata que caiba no limite. Se alguém comprar antes, tenta a próxima (até 3) e depois segue.
+  // Compra a oferta mais barata que caiba no limite. Uma tentativa só: se alguém comprar antes (ou a oferta sumir),
+  // não tenta a carta de baixo, que já é uma oferta velha; volta e faz uma pesquisa nova.
   async function buyFromResults(maxP) {
     const tried = new WeakSet();
     let lastWhy = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 1; attempt++) {
       const list = rows().filter(r => !tried.has(r) && !T.soldOrExpired.test(r.innerText))
         .map(r => ({ r, p: rowBuyNow(r) })).filter(x => x.p != null && x.p <= maxP).sort((a, b) => a.p - b.p);
       if (!list.length) return attempt === 1 ? { r: 'none' } : { r: 'lost', why: lastWhy };
@@ -301,7 +315,7 @@
       }, 4500);
       if (res === 'lost') {
         lastWhy = 'alguém comprou antes';
-        log(`   ✖ ${lastWhy} (${ident.name} ${fmt(price)}) — tentando a próxima…`, 'warn');
+        log(`   ✖ ${lastWhy} (${ident.name} ${fmt(price)}) — voltando para pesquisar de novo…`, 'warn');
         ev('lost', { name: ident.name, rating: ident.rating, price, why: lastWhy });
         closeDialog(); dismissNotifications();
         await sleep(120);
@@ -313,11 +327,12 @@
       if (c != null || ownedPanel()) return { r: 'bought', price, ident, byCoins: true };
       const seenTxt = snip(freshText());
       lastWhy = (coinsBefore == null ? 'sem confirmação (não consegui ler o saldo)' : 'sem confirmação e o saldo não mudou') + (seenTxt ? ` [tela: "${seenTxt}"]` : '');
-      log(`   ✖ ${ident.name} ${fmt(price)}: ${lastWhy}; contando como perdida e seguindo.`, 'warn');
+      log(`   ✖ ${ident.name} ${fmt(price)}: ${lastWhy}; contando como perdida e pesquisando de novo.`, 'warn');
       ev('lost', { name: ident.name, rating: ident.rating, price, why: lastWhy });
       closeDialog(); dismissNotifications();
       return { r: 'lost', why: lastWhy };
     }
+    if (lastWhy && !/alguém comprou/.test(lastWhy)) log(`   ✖ ${lastWhy} — voltando para pesquisar de novo…`, 'warn');
     return { r: 'lost', why: lastWhy || 'sem oferta' };
   }
 

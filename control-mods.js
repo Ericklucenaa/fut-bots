@@ -419,7 +419,7 @@ PAGES.docs = () => {
       <li>Pick <b>Test</b>, <b>Assisted</b> or <b>Automatic</b> in the bottom bar and click <b>Snipe</b>.</li>
     </ol>
     <p>The filter lists (rarities, events, leagues) update themselves: new options are added when they appear in the Web App, and the Sniper re-reads the lists every 12 h.</p>
-    <p>When someone buys first ("Bid status changed…"), the Sniper tries the next offer and keeps searching, without stopping. EA limit warnings pause sniping for a few minutes; three warnings in 15 minutes stop it for good.</p>
+    <p>When someone buys first ("Bid status changed…"), the Sniper does not try the next card in the list (it is an old result): it goes back and runs a fresh search, without stopping. EA limit warnings pause sniping for a few minutes; three warnings in 15 minutes stop it for good.</p>
     <h3>Gallery</h3>
     <ol>
       <li>In the Web App, open <b>Paletools → Gallery</b>, pick the <b>Category</b> (league) and the <b>Set</b> (team).</li>
@@ -457,7 +457,7 @@ PAGES.docs = () => {
       <li>Elige <b>Prueba</b>, <b>Asistido</b> o <b>Automático</b> en la barra de abajo y haz clic en <b>Snipear</b>.</li>
     </ol>
     <p>Las listas del filtro (rarezas, eventos, ligas) se actualizan solas: las opciones nuevas entran cuando aparecen en la Web App, y el Sniper vuelve a leer las listas cada 12 h.</p>
-    <p>Cuando alguien compra antes ("El estado de la puja ha cambiado…"), el Sniper prueba la siguiente oferta y sigue buscando, sin detenerse. Los avisos de límite de EA pausan el snipe unos minutos; tres avisos en 15 minutos lo detienen del todo.</p>
+    <p>Cuando alguien compra antes ("El estado de la puja ha cambiado…"), el Sniper no intenta la siguiente carta de la lista (es un resultado viejo): vuelve y hace una búsqueda nueva, sin detenerse. Los avisos de límite de EA pausan el snipe unos minutos; tres avisos en 15 minutos lo detienen del todo.</p>
     <h3>Galería</h3>
     <ol>
       <li>En la Web App, abre <b>Paletools → Gallery</b>, elige la <b>Category</b> (liga) y el <b>Set</b> (equipo).</li>
@@ -494,7 +494,7 @@ PAGES.docs = () => {
       <li>Escolha <b>Teste</b>, <b>Assistido</b> ou <b>Automático</b> na barra de baixo e clique em <b>Snipar</b>.</li>
     </ol>
     <p>As listas do filtro (raridades, eventos, ligas) se atualizam sozinhas: opções novas entram quando aparecem no Web App, e o Sniper lê as listas de novo a cada 12 h.</p>
-    <p>Quando alguém compra antes ("Status do lance alterado…"), o Sniper tenta a próxima oferta e volta a buscar, sem parar. Avisos de limite do EA pausam o snipe por alguns minutos; três avisos em 15 minutos param de vez.</p>
+    <p>Quando alguém compra antes ("Status do lance alterado…"), o Sniper não tenta a próxima carta da lista (é um resultado velho): volta e faz uma pesquisa nova, sem parar. Avisos de limite do EA pausam o snipe por alguns minutos; três avisos em 15 minutos param de vez.</p>
     <h3>Galeria</h3>
     <ol>
       <li>No Web App, abra <b>Paletools → Gallery</b>, escolha a <b>Category</b> (liga) e o <b>Set</b> (time).</li>

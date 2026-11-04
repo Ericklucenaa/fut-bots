@@ -321,15 +321,15 @@ function buildFilterUi() {
   $('fRead').onclick = () => act($('fRead'), async () => { await snipeCmd('schema'); toast('Filtros do Web App lidos.', 'good'); });
   $('fCapture').onclick = () => act($('fCapture'), async () => {
     const f = await snipeCmd('capture');
-    st.draft = { player: f.player, playerRating: null, sel: {} };
+    st.draft = { player: f.player, playerRating: null, sel: {}, prices: f.prices || null };
     f.ctls.forEach((t, i) => { if (isVal(i, t)) st.draft.sel[i] = t; });
     if (!st.schema || !st.schema.ctls.length) st.draft.raw = f.ctls;
     if (f.maxBuy) { st.cfg.maxBuy = fixPrice('maxBuy', f.maxBuy); st.cfg.mode = 'price'; }
     if (f.minBuy || f.maxBuy) st.cfg.minBuy = f.minBuy ? fixPrice('minBuy', f.minBuy) : 0;
     if (f.maxBuy || f.minBuy) { saveCfg(); refreshInputs(); sync(); }
-    save('draft'); renderFilterGrid(); toast(`Filtro copiado do Web App${f.maxBuy ? ` (oferta ${fmt(f.maxBuy)})` : ''}.`, 'good');
+    save('draft'); renderFilterGrid(); toast(`Filtro copiado do Web App${pricesText(f.prices) ? ` (${pricesText(f.prices)})` : ''}.`, 'good');
   });
-  $('fClear').onclick = () => { st.draft = { player: '', playerRating: null, sel: {} }; save('draft'); renderFilterGrid(); toast('Filtro do painel limpo: o Sniper vai usar o filtro da tela do Web App.'); };
+  $('fClear').onclick = () => { st.draft = { player: '', playerRating: null, sel: {}, prices: null }; save('draft'); renderFilterGrid(); toast('Filtro do painel limpo: o Sniper vai usar o filtro da tela do Web App.'); };
   $('fApply').onclick = () => act($('fApply'), async () => { await snipeCmd('apply', { filter: draftFilter('rascunho') }); toast('Filtro aplicado no Web App.', 'good'); });
   $('pSearch').onclick = () => act($('pSearch'), async () => {
     const q = norm($('pName').value);
@@ -354,7 +354,14 @@ function isVal(i, t) { const c = st.schema && st.schema.ctls[i]; return !!(t && 
 function draftFilter(name) {
   const d = st.draft, n = st.schema ? st.schema.ctls.length : (d.raw || []).length;
   const ctls = st.schema ? st.schema.ctls.map((_, i) => d.sel[i] || '') : (d.raw || []).slice();
-  return { name, player: d.player || '', playerRating: d.playerRating || null, ctls: ctls.length ? ctls : new Array(n).fill('') };
+  return { name, player: d.player || '', playerRating: d.playerRating || null, ctls: ctls.length ? ctls : new Array(n).fill(''), prices: d.prices || null };
+}
+// "lance 150–1.000 · compre já 200–1.500"
+function pricesText(p) {
+  if (!p) return '';
+  const r = (a, b) => a && b ? `${fmt(a)}–${fmt(b)}` : a ? `${L('mín.', 'min', 'mín.')} ${fmt(a)}` : b ? `${L('máx.', 'max', 'máx.')} ${fmt(b)}` : '';
+  const bid = r(p.bidMin, p.bidMax), bin = r(p.binMin, p.binMax);
+  return [bid && `${L('lance', 'bid', 'puja')} ${bid}`, bin && `${L('compre já', 'buy now', 'compra ya')} ${bin}`].filter(Boolean).join(' · ');
 }
 function describe(f) {
   const sc = st.schema && st.schema.ctls || [];

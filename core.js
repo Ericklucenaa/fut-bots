@@ -259,10 +259,13 @@ var FUT = (() => {
   }
   function itemIdent(el, fb) {
     if (!el) return { name: (fb && fb.name) || '?', rating: (fb && fb.rating) || null };
-    const n = el.querySelector('.name, .player-name, .ut-item-name, .itemName');
+    // siglas de liga/nação/clube que o Web App (ou o Paletools) mostra no item: "BEL 1", "ING 2", "LIB", "SUD"
+    const abbr = s => /^[A-ZÀ-Ý]{2,3}( ?\d)?$|^[A-ZÀ-Ý]{4} ?\d$/.test(s);
+    const okName = s => !!s && /[A-Za-zÀ-ÿ]{2,}/.test(s) && !/\d{3,}/.test(s) && !abbr(s) && !T.pos.test(s) && !T.tlRow.test(s);
     const r = el.querySelector('.rating, .playerOverview .rating, .ut-item-rating');
+    const tagged = [...el.querySelectorAll('.player-name, .ut-item-name, .itemName, .name')].map(e => norm(e.textContent));
     const lines = (el.innerText || '').split('\n').map(norm).filter(Boolean);
-    const name = (n && norm(n.textContent)) || lines.find(l => /[A-Za-zÀ-ÿ]{2,}/.test(l) && !/\d{3,}/.test(l) && !T.pos.test(l) && !T.tlRow.test(l)) || (fb && fb.name) || '?';
+    const name = tagged.find(okName) || lines.find(okName) || (fb && fb.name) || '?';
     const rating = (r && num(r.textContent)) || num(lines.find(l => /^\d{2}$/.test(l) && +l >= 40) || '') || (fb && fb.rating) || null;
     return { name, rating };
   }
@@ -340,8 +343,14 @@ var FUT = (() => {
     const cheap = await waitFor(() => fastFind(T.cheapest) || find(T.cheapest), 6000, 'o botão "Mais barato" (o Paletools está ativo?)');
     const before = priceInputs().map(i => i.value).join('|');
     click(cheap);
-    // o Paletools pesquisa o mercado; espera os preços mudarem
-    await waitFor(() => !loading() && priceInputs().map(i => i.value).join('|') !== before, 12000);
+    // o Paletools pesquisa o mercado; espera os preços mudarem. Se o mais barato for igual ao preço que já
+    // estava no campo (comum no relist), nada muda: termina quando a pesquisa acaba, sem esperar 12 s à toa.
+    const t0 = Date.now(); let sawLoad = false;
+    await waitFor(() => {
+      if (loading()) { sawLoad = true; return null; }
+      if (priceInputs().map(i => i.value).join('|') !== before) return true;
+      return (sawLoad && Date.now() - t0 > 800) || Date.now() - t0 > 3500;
+    }, 12000);
     await sleep(200);
     const vals = priceInputs().map(i => num(i.value));
     const bn = vals.length ? vals[vals.length - 1] : null, start = vals.length > 1 ? vals[vals.length - 2] : null;
