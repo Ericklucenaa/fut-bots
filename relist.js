@@ -15,7 +15,6 @@
   // vendidos e anúncios ativos ficam de fora; entram os expirados e os itens disponíveis (sem anúncio)
   function isCandidate(r) {
     const t = r.innerText;
-    if (F.blocked(F.itemIdent(r).name)) return false;   // lista de proteção
     if (T.sold.test(t)) return false;
     if (T.expired.test(t)) return C().expired;
     if (T.onSale.test(t)) return false;   // ainda à venda
@@ -34,6 +33,12 @@
     const failed = {};   // nome → quantas vezes falhou (para não ficar tentando o mesmo item)
     try {
       log('▶ Relist: relistando a Lista de Transferências pelo mais barato.', 'good');
+      // sem nada para fazer, nem abre a tela (se a ponte não responder, segue pelo caminho normal)
+      try {
+        const list = await F.pageCall('tl', {}, 8000);
+        const work = list.some(i => i.state === 'sold' ? cfg.clearSold : i.state === 'expired' ? cfg.expired : i.state === 'inactive' ? cfg.unassigned : i.state === 'other');
+        if (!work) { log('■ Nada para relistar: todos os anúncios estão ativos.', 'good'); return; }
+      } catch {}
       await F.goToTransferList(log);
       if (cfg.clearSold) await F.clearSold(log);
       let clearedOnFull = false;

@@ -326,9 +326,6 @@ PAGES.tools = () => {
           <div class="row"><button class="btn" data-op="tlToClub" ${dis}>Enviar não repetidos ao clube</button><button class="btn" data-op="clearSold" ${dis}>Retirar vendidos (e registrar o lucro)</button><button class="btn" data-goto="rel">Relistar…</button></div>
         </div>
         <div class="card"><div class="ch"><div><h3>Recompensas</h3><p>Procura botões de resgatar na tela atual e em Objetivos. Experimental: me avise se não achar alguma.</p></div><button class="btn" data-op="claim" ${dis}>Resgatar recompensas</button></div></div>
-        <div class="card"><div class="ch"><div><h3>Proteção</h3><p>Nomes que nunca são vendidos nem relistados (Relist e Ferramentas). Um por linha; vale parte do nome.</p></div></div>
-          <textarea id="blockList" rows="5" placeholder="Ex.: Vinícius Júnior">${esc((c.block || []).join('\n'))}</textarea>
-        </div>
       </div>
       <div class="colside">
         <div class="card logcard"><div class="ch"><h3>Log das Ferramentas</h3><div class="acts"><button class="link" data-logdl="tools">baixar</button><button class="link" data-logclr="tools">limpar</button></div></div>
@@ -339,12 +336,279 @@ PAGES.tools = () => {
   segSync();
   $('uaDup').onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; st.cfg.uaDup = b.dataset.v; saveCfg(); segSync(); };
   $('uaClub').onchange = () => { st.cfg.uaClub = $('uaClub').checked; saveCfg(); };
-  $('blockList').onchange = () => { st.cfg.block = $('blockList').value.split('\n').map(x => x.trim()).filter(Boolean); saveCfg(); toast('Feito.', 'good'); };
   el.onclick = e => {
     const b = e.target.closest('[data-op]'); if (!b || b.disabled) return;
     act(b, async () => { await modCmd('tools', b.dataset.op); toast('Ferramenta iniciada no Web App.', 'good'); });
   };
   renderLog();
+};
+
+// ---------- MEU CLUBE ----------
+const saveClub = () => store.set({ clubCfg: st.clubCfg });
+const clubUi = { q: '', qual: '', trade: 'yes', pos: '', min: '', max: '', squad: '', gain: '', sel: new Set(), sort: 'rating' };
+const qualOf = r => r >= 75 ? 'gold' : r >= 65 ? 'silver' : 'bronze';
+const clubProfit = p => p.price ? net(p.price) - (p.buy || 0) : null;
+const clubAll = () => (st.club && st.club.players) || [];
+function clubRows() {
+  const u = clubUi, q = norm(u.q).toLowerCase();
+  return clubAll().filter(p => (!q || p.name.toLowerCase().includes(q)) && (!u.qual || qualOf(p.rating) === u.qual)
+    && (!u.pos || p.pos === u.pos) && (!u.min || p.rating >= +u.min) && (!u.max || p.rating <= +u.max)
+    && (!u.trade || (u.trade === 'yes') === !p.untradeable)
+    && (!u.squad || (u.squad === 'in') === !!p.inSquad) && (u.gain === '' || (clubProfit(p) ?? -Infinity) >= +u.gain))
+    .sort((a, b) => (u.sort === 'price' ? (b.price || 0) - (a.price || 0) : u.sort === 'buy' ? (b.buy || 0) - (a.buy || 0) : u.sort === 'profit' ? (clubProfit(b) ?? -Infinity) - (clubProfit(a) ?? -Infinity) || 0 : 0) || (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name));
+}
+const clubPic = p => { if (/portraits/.test(p.img || '')) return p.img; const e = (p.def && { id: p.def }) || PDB.find(p.name, p.rating); return e ? PDB.portrait(e.id) : ''; };
+// carta desenhada pela extensão: cor pela qualidade, com nota e posição
+const miniCard = p => `<span class="fc q-${qualOf(p.rating)}" data-notr><b>${esc(p.rating)}</b><i>${esc(p.pos || '')}</i>${playerPic(clubPic(p), p.name)}</span>`;
+const clubPicked = () => clubAll().filter(p => clubUi.sel.has(p.key));
+const clubCount = () => clubPicked().reduce((a, p) => a + (p.n || 1), 0);
+function clubTable() {
+  if (!$('cRows')) return;
+  const keys = new Set(clubAll().map(p => p.key));
+  for (const k of clubUi.sel) if (!keys.has(k)) clubUi.sel.delete(k);
+  const all = clubAll(), rows = clubRows(), c = st.club;
+  const sel = $('cPos'), cur = clubUi.pos;
+  sel.innerHTML = `<option value="">${tr('Todas as posições')}</option>` + [...new Set(all.map(p => p.pos).filter(Boolean))].sort().map(p => `<option value="${esc(p)}"${p === cur ? ' selected' : ''}>${esc(p)}</option>`).join('');
+  $('cInfo').textContent = c ? `${fmt(all.reduce((a, p) => a + (p.n || 1), 0))} ${tr('jogadores')} · ${new Date(c.t).toLocaleString(FSB.loc())}${c.partial ? ' · ' + tr('lista incompleta') : ''}` : tr('Ainda não analisado');
+  $('cRows').innerHTML = rows.map(p => {
+    const lock = p.untradeable, pr = clubProfit(p);
+    return `<tr><td><input type="checkbox" data-k="${esc(p.key)}" ${clubUi.sel.has(p.key) ? 'checked' : ''} ${lock ? 'disabled' : ''}></td><td class="r">${esc(p.rating)}</td><td data-notr><div class="pl">${miniCard(p)}<span>${esc(p.name)}${p.n > 1 ? ` ×${p.n}` : ''}</span></div></td><td data-notr>${esc(p.pos)}</td><td class="r">${p.buy ? fmt(p.buy) : '<span class="mut">–</span>'}</td><td class="r"${p.priceT ? ` title="${esc(new Date(p.priceT).toLocaleString(FSB.loc()))}"` : ''}>${p.price ? `<b>${fmt(p.price)}</b>` : p.none ? `<span class="mut">${tr('sem oferta')}</span>` : '<span class="mut">–</span>'}</td><td class="r ${pr > 0 ? 'good' : pr < 0 ? 'bad' : ''}">${pr == null ? '<span class="mut">–</span>' : fmt(pr)}</td><td>${p.untradeable ? `<span class="tag">${tr('Inegociável')}</span>` : p.inSquad ? `<span class="tag warn">${tr('No time')}</span>` : `<span class="tag good">${tr('Negociável')}</span>`}</td><td class="acts2"><button data-row="snipe" data-k="${esc(p.key)}" title="${tr('Snipar este jogador')}">${ico('snipe')}</button>${p.def ? `<button data-row="watch" data-k="${esc(p.key)}" title="${tr('Acompanhar e ver o gráfico')}">${ico('market')}</button>` : ''}</td></tr>`;
+  }).join('') || `<tr><td colspan="9"><div class="empty">${tr(c ? 'Nenhuma carta com esses filtros.' : 'Clique em Analisar clube para listar seus jogadores.')}</div></td></tr>`;
+  clubLive();
+}
+function clubLive() {
+  if (!$('cSell')) return;
+  const o = owner(), n = clubCount(), R = status && status.club && status.club.R, cfg = st.clubCfg;
+  $('cSelN').textContent = fmt(n);
+  const priced = clubPicked().filter(p => p.price), est = priced.reduce((a, p) => a + net(p.price) * (p.n || 1), 0);
+  const gain = priced.reduce((a, p) => a + clubProfit(p) * (p.n || 1), 0);
+  $('cEst').textContent = priced.length ? `${tr('Valor estimado')}: ${fmt(est)} · ${tr('Lucro estimado')}: ${fmt(gain)} (${tr('já tirando os 5% do EA')})` : '';
+  $('cPriceBtn').disabled = !!o || !n;
+  $('cProg').textContent = o === 'club' && R && R.line ? R.line : '';
+  for (const b of $('cMode').children) { b.classList.toggle('on', (b.dataset.v === 'test') === !!cfg.dryRun); b.disabled = !!o; }
+  for (const b of $('cHow').children) { b.classList.toggle('on', b.dataset.v === cfg.how); b.disabled = !!o; }
+  $('cFixed').hidden = cfg.how !== 'fixed'; $('cMinF').hidden = cfg.how === 'fixed';
+  $('cScan').disabled = !!o;
+  $('cSell').disabled = $('cTL').disabled = !!o || !n;
+  $('cSell').textContent = tr(cfg.dryRun ? 'Testar venda' : 'Vender selecionadas');
+  $('cTL').textContent = tr(cfg.dryRun ? 'Testar envio' : 'Enviar para a Lista de Transferências');
+  for (const b of document.querySelectorAll('#p-club [data-nav]')) b.disabled = !!o;
+}
+// abre o Sniper com o jogador e um degrau abaixo do menor preço
+function clubSnipe(p) {
+  const e = PDB.find(p.name, p.rating);
+  st.draft = { player: e ? e.name : p.name, playerRating: p.rating, sel: {}, prices: null };
+  save('draft');
+  if (p.price) { st.cfg.mode = 'price'; st.cfg.maxBuy = ladderPrev(p.price) || p.price; saveCfg(); refreshInputs(); sync(); }
+  go('sniper'); renderFilterGrid();
+  toast(`${p.name}: filtro pronto no Sniper.`, 'good');
+}
+async function clubPrices() {
+  const list = clubPicked();
+  if (list.length > 20 && !confirm(L(`Buscar o preço de ${list.length} cartas? Cada carta é uma busca no mercado e leva alguns segundos.`, `Look up ${list.length} cards? Each card is one market search and takes a few seconds.`, `¿Buscar el precio de ${list.length} cartas? Cada carta es una búsqueda en el mercado y tarda unos segundos.`))) return;
+  await modCmd('club', 'price', { items: list.map(p => ({ key: p.key, n: 1 })) });
+  toast('Ferramenta iniciada no Web App.', 'good');
+}
+async function clubRun(op) {
+  const cfg = st.clubCfg, n = clubCount();
+  const items = clubPicked().map(p => ({ key: p.key, n: p.n || 1 }));
+  const fixed = op === 'sell' && cfg.how === 'fixed';
+  if (fixed && !(cfg.price >= 200)) { toast('Informe um preço de venda de pelo menos 200.', 'bad'); return; }
+  if (!cfg.dryRun) {
+    const what = op === 'toTL' ? L(`Enviar ${n} carta(s) para a Lista de Transferências?`, `Send ${n} card(s) to the Transfer List?`, `¿Enviar ${n} carta(s) a la lista de transferibles?`)
+      : fixed ? L(`Vender ${n} carta(s) por ${fmt(cfg.price)} cada?`, `Sell ${n} card(s) for ${fmt(cfg.price)} each?`, `¿Vender ${n} carta(s) por ${fmt(cfg.price)} cada una?`)
+      : L(`Vender ${n} carta(s) no mais barato do mercado?`, `Sell ${n} card(s) at the lowest market price?`, `¿Vender ${n} carta(s) al precio más bajo del mercado?`);
+    if (!confirm(what)) return;
+  }
+  await modCmd('club', op, { items, price: fixed ? cfg.price : 0 });
+  toast('Ferramenta iniciada no Web App.', 'good');
+}
+PAGES.club = () => {
+  const el = $('p-club'), u = clubUi, cfg = st.clubCfg;
+  el.innerHTML = `
+    <div class="ph"><div><h2>Meu clube</h2><p>Lê os jogadores do seu clube. Depois selecione as cartas e venda ou envie para a Lista de Transferências. O bot abre as telas sozinho.</p></div></div>
+    <div class="cols">
+      <div class="colmain">
+        <div class="card">
+          <div class="ch"><div><h3>Jogadores</h3><p id="cInfo" data-notr></p></div><button class="btn acc" id="cScan">Analisar clube</button></div>
+          <div class="clubf">
+            <input type="text" id="cQ" placeholder="Buscar jogador" value="${esc(u.q)}">
+            <select id="cQual"><option value="">Todas as qualidades</option><option value="gold">Ouro</option><option value="silver">Prata</option><option value="bronze">Bronze</option></select>
+            <select id="cPos"></select>
+            <select id="cTrade"><option value="yes">Negociáveis</option><option value="no">Inegociáveis</option><option value="">Todas</option></select>
+            <input type="number" id="cMin" placeholder="Geral mín." min="1" max="99" value="${esc(u.min)}">
+            <input type="number" id="cMax" placeholder="Geral máx." min="1" max="99" value="${esc(u.max)}">
+            <select id="cSquad"><option value="">Com e sem time</option><option value="out">Fora do time ativo</option><option value="in">No time ativo</option></select>
+            <input type="number" id="cGain" placeholder="Lucro mín." step="50" value="${esc(u.gain)}">
+          </div>
+          <div class="row"><button class="btn sm" id="cAll">Selecionar as filtradas</button><button class="btn sm" id="cNone">Limpar seleção</button><span class="flex"></span><button class="btn sm" data-rule="gain">Só com lucro</button><button class="btn sm" data-rule="cheap">Bronzes e pratas</button><button class="btn sm" data-rule="idle">Paradas de maior valor</button><button class="btn sm" data-rule="clear">Limpar filtros</button><button class="btn sm" id="cCsv">Exportar CSV</button></div>
+          <div class="tbl clubt"><table><thead><tr><th></th><th class="r">Nota</th><th>Jogador</th><th>Posição</th><th class="r sortable" data-sort="buy" title="Último valor pago por essa carta. Vazio em cartas de pacote ou recompensa.">Comprei</th><th class="r sortable" data-sort="price" title="Menor preço atual do mercado">Venda</th><th class="r sortable" data-sort="profit" title="Venda menos os 5% do EA, menos o que você pagou">Lucro</th><th>Status</th><th></th></tr></thead><tbody id="cRows"></tbody></table></div>
+        </div>
+      </div>
+      <div class="colside">
+        <div class="card">
+          <div class="ch"><div><h3>Ação</h3><p><b id="cSelN">0</b> <span>selecionada(s)</span></p></div></div>
+          <button class="btn acc" id="cPriceBtn" title="Pergunta o preço direto ao Web App, sem abrir telas. Cada carta conta como uma busca no mercado.">Buscar menor preço</button>
+          <label class="tg"><input type="checkbox" id="cDeep" ${cfg.deep ? 'checked' : ''}><span></span>Busca precisa <small>até 4 buscas por carta</small></label>
+          <div class="riskwhy" id="cEst" data-notr></div>
+          <div class="seg run" id="cMode"><button data-v="test">Teste</button><button data-v="real">De verdade</button></div>
+          <div class="field"><label>Preço de venda</label><div class="seg" id="cHow"><button data-v="cheapest">Mais barato</button><button data-v="fixed">Preço fixo</button></div></div>
+          <div class="field" id="cFixed"><label>Comprar já de cada carta</label><input type="number" id="cPrice" min="200" step="50" value="${cfg.price || ''}"></div>
+          <div class="field" id="cMinF"><label>Não vender abaixo de <i title="0 = aceita qualquer preço">?</i></label><input type="number" id="cMinP" min="0" step="50" value="${cfg.minPrice || 0}"></div>
+          <button class="go" id="cSell">Vender selecionadas</button>
+          <button class="btn" id="cTL">Enviar para a Lista de Transferências</button>
+          <div class="riskwhy" id="cProg" data-notr></div>
+          <div class="riskwhy">O mais barato segue Configurações → Menor preço do mercado (Paletools, se estiver ativo).</div>
+        </div>
+        <div class="card"><div class="ch"><div><h3>Ir para</h3><p>Abre a tela no Web App.</p></div></div>
+          <div class="row wrap">
+            <button class="btn sm" data-nav="home">Início</button><button class="btn sm" data-nav="club">Jogadores do clube</button><button class="btn sm" data-nav="market">Pesquisar no Mercado</button><button class="btn sm" data-nav="tl">Lista de Transferências</button><button class="btn sm" data-nav="unassigned">Não atribuídos</button>
+          </div></div>
+        <div class="card logcard"><div class="ch"><h3>Log do Clube</h3><div class="acts"><button class="link" data-logdl="club">baixar</button><button class="link" data-logclr="club">limpar</button></div></div>
+          <div class="log" data-src="club"></div></div>
+      </div>
+    </div>`;
+  $('cQual').value = u.qual; $('cTrade').value = u.trade; $('cSquad').value = u.squad;
+  const bind = (id, k) => { $(id).oninput = () => { u[k] = $(id).value; clubTable(); }; };
+  bind('cQ', 'q'); bind('cQual', 'qual'); bind('cPos', 'pos'); bind('cTrade', 'trade'); bind('cMin', 'min'); bind('cMax', 'max'); bind('cSquad', 'squad'); bind('cGain', 'gain');
+  $('cRows').onchange = e => { const k = e.target.dataset.k; if (!k) return; if (e.target.checked) u.sel.add(k); else u.sel.delete(k); clubLive(); };
+  $('cAll').onclick = () => { for (const p of clubRows()) if (!p.untradeable && !p.inSquad) u.sel.add(p.key); clubTable(); };
+  $('cNone').onclick = () => { u.sel.clear(); clubTable(); };
+  // regras prontas: só preenchem os filtros; a venda continua sendo você quem confirma
+  el.querySelector('.clubf').parentElement.addEventListener('click', e => {
+    const b = e.target.closest('[data-rule]'); if (!b) return;
+    Object.assign(u, { qual: '', squad: '', gain: '', min: '', max: '', trade: 'yes', sort: 'rating' });
+    if (b.dataset.rule === 'gain') { u.gain = '1'; u.sort = 'profit'; }
+    if (b.dataset.rule === 'cheap') u.max = '74';
+    if (b.dataset.rule === 'idle') { u.squad = 'out'; u.sort = 'price'; }
+    for (const [id, k] of [['cQual', 'qual'], ['cSquad', 'squad'], ['cGain', 'gain'], ['cMin', 'min'], ['cMax', 'max'], ['cTrade', 'trade']]) $(id).value = u[k];
+    clubTable();
+  });
+  $('cCsv').onclick = () => {
+    const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    const lines = [['Jogador', 'Nota', 'Posição', 'Comprei', 'Venda', 'Lucro', 'Negociável', 'No time ativo'].map(q).join(';'),
+      ...clubRows().map(p => [p.name, p.rating, p.pos, p.buy || '', p.price || '', clubProfit(p) ?? '', p.untradeable ? 'não' : 'sim', p.inSquad ? 'sim' : 'não'].map(q).join(';'))];
+    download('fut-bots-clube.csv', '\ufeff' + lines.join('\r\n'), 'text/csv');
+  };
+  $('cRows').onclick = e => {
+    const b = e.target.closest('[data-row]'); if (!b) return;
+    const p = clubAll().find(x => x.key === b.dataset.k); if (!p) return;
+    if (b.dataset.row === 'snipe') clubSnipe(p);
+    else { watchUi.def = p.def; addWatch({ id: p.def, name: p.name, r: p.rating }); go('watch'); }
+  };
+  $('cDeep').onchange = () => { st.clubCfg.deep = $('cDeep').checked; saveClub(); };
+  $('cScan').onclick = () => act($('cScan'), async () => { await modCmd('club', 'scan'); toast('Ferramenta iniciada no Web App.', 'good'); });
+  $('cPriceBtn').onclick = () => act(null, clubPrices);
+  el.querySelector('.clubt thead').onclick = e => { const k = e.target.dataset.sort; if (!k) return; u.sort = u.sort === k ? 'rating' : k; clubTable(); };
+  $('cSell').onclick = () => act(null, () => clubRun('sell'));
+  $('cTL').onclick = () => act(null, () => clubRun('toTL'));
+  $('cMode').onclick = e => {
+    const b = e.target.closest('[data-v]'); if (!b || owner()) return;
+    const test = b.dataset.v === 'test';
+    if (!test && st.clubCfg.dryRun && !confirm('Agir de verdade?\n\nO bot vai vender ou mover as cartas selecionadas. Teste antes no modo Teste.')) return;
+    st.clubCfg.dryRun = test; saveClub(); clubLive();
+  };
+  $('cHow').onclick = e => { const b = e.target.closest('[data-v]'); if (!b || owner()) return; st.clubCfg.how = b.dataset.v; saveClub(); clubLive(); };
+  $('cPrice').onchange = () => { st.clubCfg.price = ladderDown(+$('cPrice').value || 0); $('cPrice').value = st.clubCfg.price; saveClub(); };
+  $('cMinP').onchange = () => { st.clubCfg.minPrice = Math.max(0, +$('cMinP').value || 0); saveClub(); };
+  el.querySelector('.row.wrap').onclick = e => { const b = e.target.closest('[data-nav]'); if (b) act(b, async () => { await modCmd('club', 'goto', { where: b.dataset.nav }); }); };
+  clubTable(); renderLog();
+};
+
+// ---------- TRANSFERÊNCIAS ----------
+const TL_ST = { active: ['À venda', 'good'], sold: ['Vendida', 'good'], expired: ['Expirada', 'warn'], inactive: ['Não listada', ''], other: ['Outro', ''] };
+const tlCard = i => miniCard({ ...i, pos: '', def: i.def });
+function tlTable() {
+  if (!$('tRows')) return;
+  const items = (st.tl && st.tl.items) || [], t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const pl = from => sum(st.sales.filter(x => x.t >= from), x => net(x.sale) - x.buy);
+  const count = s => items.filter(i => i.state === s).length;
+  $('tTiles').innerHTML = [['À venda', count('active')], ['Expiradas', count('expired')], ['Vendidas na lista', count('sold')]].map(([a, b]) => `<div class="tile"><small>${tr(a)}</small><b>${fmt(b)}</b></div>`).join('')
+    + [['Lucro real hoje', pl(+t0)], ['Lucro real 7 dias', pl(Date.now() - 7 * DAY)], ['Lucro real total', pl(0)]].map(([a, b]) => `<div class="tile"><small>${tr(a)}</small><b class="${b >= 0 ? 'good' : 'bad'}">${fmt(b)}</b></div>`).join('');
+  $('tInfo').textContent = st.tl ? `${tr('Atualizada')}: ${new Date(st.tl.t).toLocaleString(FSB.loc())}` : tr('Clique em Atualizar para ler a lista.');
+  $('tRows').innerHTML = items.map(i => {
+    const price = i.state === 'sold' ? i.bid : i.bin, g = price ? net(price) - i.buy : null, s = TL_ST[i.state] || TL_ST.other;
+    return `<tr><td data-notr><div class="pl">${tlCard(i)}<span>${esc(i.name)}</span></div></td><td><span class="tag ${s[1]}">${tr(s[0])}</span></td><td class="r">${i.buy ? fmt(i.buy) : '–'}</td><td class="r">${price ? fmt(price) : '–'}</td><td class="r ${g > 0 ? 'good' : g < 0 ? 'bad' : ''}">${g == null ? '–' : fmt(g)}</td><td class="r">${i.left > 0 ? `${Math.ceil(i.left / 60)} min` : ''}</td></tr>`;
+  }).join('') || `<tr><td colspan="6"><div class="empty">${tr('Nada na lista.')}</div></td></tr>`;
+  $('tSales').innerHTML = st.sales.slice(-200).reverse().map(x => { const g = net(x.sale) - x.buy; return `<tr><td>${esc(dfmt(x.t))}</td><td data-notr>${esc(x.name)} ${esc(x.rating)}</td><td class="r">${x.buy ? fmt(x.buy) : '–'}</td><td class="r">${fmt(x.sale)}</td><td class="r ${g > 0 ? 'good' : g < 0 ? 'bad' : ''}">${fmt(g)}</td></tr>`; }).join('') || `<tr><td colspan="5"><div class="empty">${tr('Nenhuma venda registrada ainda.')}</div></td></tr>`;
+}
+PAGES.tl = () => {
+  $('p-tl').innerHTML = `
+    <div class="ph"><div><h2>Transferências</h2><p>A Lista de Transferências sem sair do painel, com o lucro real de cada venda (já tirando os 5% do EA).</p></div><span class="flex"></span><button class="btn acc" id="tRef">Atualizar</button></div>
+    <div class="grid">
+      <div class="tiles" id="tTiles"></div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><h3>Lista agora</h3><p id="tInfo" data-notr></p></div></div>
+          <div class="tbl tlt"><table><thead><tr><th>Jogador</th><th>Situação</th><th class="r">Comprei</th><th class="r">Preço</th><th class="r">Lucro</th><th class="r">Resta</th></tr></thead><tbody id="tRows"></tbody></table></div></div>
+        <div class="card"><div class="ch"><h3>Vendas registradas</h3></div>
+          <div class="tbl tlt"><table><thead><tr><th>Quando</th><th>Jogador</th><th class="r">Comprei</th><th class="r">Vendi</th><th class="r">Lucro</th></tr></thead><tbody id="tSales"></tbody></table></div></div>
+      </div>
+    </div>`;
+  $('tRef').onclick = () => act($('tRef'), () => modCmd('club', 'tl'));
+  tlTable();
+  if (status && !owner()) modCmd('club', 'tl').catch(() => {});
+};
+
+// ---------- ACOMPANHAR ----------
+const watchUi = { def: null };
+function addWatch(p, target = 0) {
+  if (!p.id || st.watch.some(w => w.def === p.id)) return;
+  st.watch.push({ def: p.id, name: p.name, rating: p.r, target });
+  save('watch');
+}
+function watchTable() {
+  if (!$('wRows')) return;
+  $('wRows').innerHTML = st.watch.map(w => {
+    const r = st.watchRes[w.def] || {}, hit = r.p != null && w.target && r.p <= w.target;
+    return `<tr class="${watchUi.def === w.def ? 'on' : ''}" data-d="${w.def}"><td data-notr><div class="pl">${playerPic(PDB.portrait(w.def), w.name)}<span>${esc(w.name)}</span></div></td><td class="r">${esc(w.rating)}</td><td class="r"><input type="number" data-t="${w.def}" min="0" step="50" value="${w.target || ''}" placeholder="0"></td><td class="r">${r.p != null ? `<b>${fmt(r.p)}</b>` : '–'}${hit ? ` <span class="tag good">${tr('no alvo')}</span>` : ''}</td><td>${r.t ? esc(dfmt(r.t)) : ''}</td><td class="acts2"><button data-x="${w.def}" title="${tr('Remover')}">✕</button></td></tr>`;
+  }).join('') || `<tr><td colspan="6"><div class="empty">${tr('Busque um jogador acima para acompanhar.')}</div></td></tr>`;
+  const w = st.watch.find(x => x.def === watchUi.def), h = (st.priceHist[watchUi.def] || []);
+  const hist = Object.keys(st.priceHist).length;
+  $('wTitle').textContent = w ? w.name : (hist ? tr('Selecione um jogador') : tr('Histórico de preço'));
+  if (watchUi.def) lineChart($('wChart'), h, { label: 'preço' }); else $('wChart').innerHTML = `<div class="empty">${tr('Clique num jogador para ver o histórico. Cada busca de preço gera um ponto.')}</div>`;
+  const last = h.slice(-8).reverse();
+  $('wPts').innerHTML = last.map(p => `<tr><td>${esc(dfmt(p.t))}</td><td class="r">${fmt(p.v)}</td></tr>`).join('');
+}
+PAGES.watch = () => {
+  const c = st.cfg;
+  $('p-watch').innerHTML = `
+    <div class="ph"><div><h2>Acompanhar</h2><p>Avisa quando um jogador chega no preço que você quer e guarda o histórico de preço.</p></div></div>
+    <div class="cols">
+      <div class="colmain">
+        <div class="card"><div class="ch"><div><h3>Jogadores</h3><p>Cada jogador é uma busca no mercado a cada conferência.</p></div><button class="btn acc" id="wNow">Conferir agora</button></div>
+          <input type="text" id="wQ" placeholder="Buscar jogador (3 letras)">
+          <div class="sugg" id="wSugg" data-notr></div>
+          <div class="tbl"><table><thead><tr><th>Jogador</th><th class="r">Nota</th><th class="r">Alvo</th><th class="r">Último preço</th><th>Quando</th><th></th></tr></thead><tbody id="wRows"></tbody></table></div>
+        </div>
+        <div class="card"><div class="ch"><h3 id="wTitle" data-notr></h3></div><div id="wChart"></div>
+          <div class="tbl"><table><tbody id="wPts"></tbody></table></div></div>
+      </div>
+      <div class="colside">
+        <div class="card"><div class="ch"><h3>Conferência automática</h3></div>
+          <label class="tg"><input type="checkbox" id="wOn" ${c.watchOn ? 'checked' : ''}><span></span>Conferir sozinho <small>desligado por padrão</small></label>
+          <div class="field"><label>Intervalo em minutos (mínimo 10)</label><input type="number" id="wMin" min="10" value="${c.watchMin}"></div>
+          <div class="riskwhy">Só roda com o Web App aberto e livre, e respeita o limite de buscas em 24 h. Mais jogadores e intervalos curtos aumentam o risco de limite do EA.</div>
+        </div>
+      </div>
+    </div>`;
+  $('wOn').onchange = () => { st.cfg.watchOn = $('wOn').checked; saveCfg(); };
+  $('wMin').onchange = () => { st.cfg.watchMin = Math.max(10, +$('wMin').value || 15); $('wMin').value = st.cfg.watchMin; saveCfg(); };
+  $('wNow').onclick = () => act($('wNow'), async () => { if (!st.watch.length) throw new Error('Busque um jogador acima para acompanhar.'); await modCmd('club', 'watch'); toast('Ferramenta iniciada no Web App.', 'good'); });
+  let tq;
+  $('wQ').oninput = () => { clearTimeout(tq); tq = setTimeout(() => {
+    const list = PDB.search($('wQ').value, 12);
+    $('wSugg').classList.toggle('pics', list.length > 0);
+    $('wSugg').innerHTML = list.map((p, i) => `<button data-i="${i}">${playerPic(PDB.portrait(p.id), p.name)}<span>${esc(p.name)}<small>#${p.id}</small></span><b>${p.r}</b></button>`).join('');
+    $('wSugg').onclick = e => { const b = e.target.closest('button'); if (!b) return; const p = list[+b.dataset.i]; watchUi.def = p.id; addWatch(p); $('wSugg').innerHTML = ''; $('wQ').value = ''; watchTable(); };
+  }, 180); };
+  $('wRows').onclick = e => {
+    const x = e.target.closest('[data-x]');
+    if (x) { st.watch = st.watch.filter(w => w.def !== +x.dataset.x); save('watch'); watchTable(); return; }
+    if (e.target.closest('input')) return;
+    const r = e.target.closest('[data-d]'); if (r) { watchUi.def = +r.dataset.d; watchTable(); }
+  };
+  $('wRows').onchange = e => { const k = e.target.dataset.t; if (!k) return; const w = st.watch.find(v => v.def === +k); if (w) { w.target = ladderDown(+e.target.value || 0) * (+e.target.value > 0 ? 1 : 0); save('watch'); } };
+  watchTable();
 };
 
 // ---------- CONFIGURAÇÕES ----------
@@ -359,6 +623,8 @@ PAGES.settings = () => {
       </div>
       <div class="card"><div class="ch"><h3>Geral</h3></div>
         <label class="tg"><input type="checkbox" id="setSound" ${st.cfg.sound ? 'checked' : ''}><span></span>Som ao comprar, nos alertas e quando um módulo para sozinho</label>
+        <label class="tg"><input type="checkbox" id="setNotify" ${st.cfg.notify ? 'checked' : ''}><span></span>Notificações do Windows <small>carta vendida, preço no alvo, captcha e avisos do EA</small></label>
+        <label class="tg"><input type="checkbox" id="setTrack" ${st.cfg.trackSales ? 'checked' : ''}><span></span>Conferir vendas a cada 5 min <small>lê a Lista de Transferências, não é busca no mercado</small></label>
         <label class="tg"><input type="checkbox" id="setKeys" ${st.cfg.keys ? 'checked' : ''}><span></span>Atalhos de teclado no Web App <small>Alt+Shift+S Snipe · Alt+Shift+G Galeria · Alt+Shift+R Relist · Alt+Shift+X parar · Enter/Esc no modo assistido</small></label>
       </div>
       <div class="card"><div class="ch"><div><h3>Menor preço do mercado</h3><p>Usado na venda do Sniper, na Galeria, no Relist e nas Ferramentas.</p></div></div>
@@ -378,6 +644,8 @@ PAGES.settings = () => {
       </div>
     </div>`;
   $('setSound').onchange = () => { st.cfg.sound = $('setSound').checked; saveCfg(); };
+  $('setNotify').onchange = () => { st.cfg.notify = $('setNotify').checked; saveCfg(); };
+  $('setTrack').onchange = () => { st.cfg.trackSales = $('setTrack').checked; saveCfg(); };
   $('setKeys').onchange = () => { st.cfg.keys = $('setKeys').checked; saveCfg(); };
   $('setPriceSrc').onchange = () => { st.cfg.priceSrc = $('setPriceSrc').value; saveCfg(); toast('Feito.', 'good'); };
   $('themes').onclick = e => { const b = e.target.closest('[data-th]'); if (!b) return; st.cfg.theme = b.dataset.th; saveCfg(); setTheme(); for (const x of $('themes').children) x.classList.toggle('on', x === b); toast(`Tema ${THEMES[b.dataset.th].name}.`, 'good'); };
@@ -402,11 +670,11 @@ PAGES.settings = () => {
 // ---------- COMO USAR (um texto por idioma) ----------
 PAGES.docs = () => {
   const html = I18N.get() === 'en' ? `<div class="docs">
-    <div class="ph"><div><h2>How to use</h2><p>Three tools for the EA FC Ultimate Team Web App, controlled from here.</p></div></div>
+    <div class="ph"><div><h2>How to use</h2><p>Tools for the EA FC Ultimate Team Web App, controlled from here.</p></div></div>
     <h3>First things first</h3>
     <ol>
       <li>Keep the <b>Web App open and visible</b> in the other window. This panel opens in a separate window for exactly that reason: if the Web App is minimized or in a hidden tab, Chrome slows the tools down.</li>
-      <li>Only the Gallery needs <b>Paletools</b> (the Gallery screen is theirs). Sniper, Relist and Tools work without it: the lowest price is found by the extension itself (Settings → Lowest market price).</li>
+      <li>Only the Gallery needs <b>Paletools</b> (the Gallery screen is theirs). Sniper, Relist, My club and Tools work without it: the lowest price is found by the extension itself (Settings → Lowest market price).</li>
       <li>Only one tool works at a time. While one runs, the others wait (the top of the panel shows who is working and has a <b>Stop</b> button).</li>
       <li>The Web App shows a small widget with the three tools: you can start, stop and open this panel from it.</li>
       <li>The panel language can be changed with the <b>PT / EN / ES</b> buttons at the top. Activity log messages that are not translated yet stay in Portuguese.</li>
@@ -429,8 +697,23 @@ PAGES.docs = () => {
     <p>Cards you own but have not included count as yours: click <b>Include</b> on them to avoid wasting coins. Profit shows up in <b>Gallery → Profit and sales</b> when the Transfer List is opened.</p>
     <h3>Relist</h3>
     <p>Click <b>Relist now</b> from any Web App screen. It opens the Transfer List, clears sold items and relists expired and unlisted items at the "Cheapest" price, respecting your minimum price.</p>
+    <h3>My club</h3>
+    <ol>
+      <li>Click <b>Analyze club</b>: the bot reads every player, with photo, status and the last price paid for each card (<b>Bought</b>). Pack or reward cards have no such value.</li>
+      <li>Filter and select the cards, or use <b>Select filtered</b>. Untradeable cards cannot be selected.</li>
+      <li><b>Find lowest price</b> asks the Web App directly, without opening screens. It fills <b>Sale</b> (current lowest price) and <b>Profit</b> (sale minus the 5% EA tax, minus what you paid). Click a column title to sort. This lookup never sells or moves anything.</li>
+      <li>Each card counts as one market search and follows the 24 h limit and the Sniper speed. Cards looked up in the last 10 minutes are skipped.</li>
+      <li>To sell, choose <b>Lowest price</b> (follows Settings → Lowest market price) or <b>Fixed price</b> and click <b>Sell selected</b>, or use <b>Send to Transfer List</b>.</li>
+      <li>Selling and sending start in <b>Test</b>: the bot opens each card and checks the buttons without selling or moving anything. Switch to <b>For real</b> when the log looks right.</li>
+    </ol>
+    <p><b>Go to</b> opens a screen in the Web App (Home, Club players, Search the Transfer Market, Transfer List, Unassigned). The actions also open the screens they need on their own.</p>
+    <p>The table also shows who is in the <b>active squad</b>. Use the filters and ready-made rules (<b>Profit only</b>, <b>Bronze and silver</b>, <b>Idle, highest value</b>), export to <b>CSV</b>, open the <b>Sniper</b> with the player ready, or watch the price with the row buttons. <b>Precise search</b> looks for cheaper offers beyond the first page and uses up to 4 searches per card.</p>
+    <h3>Transfers</h3>
+    <p>Shows the Transfer List without opening screens and records each sale with its <b>real profit</b>. The total also appears on the Dashboard, separate from the modules.</p>
+    <h3>Watch</h3>
+    <p>Search for a player, set a <b>target</b> and use <b>Check now</b>, or turn on <b>Check on its own</b> (10 minutes minimum). When the price reaches the target, a Windows notification appears. Click a player to see the price chart.</p>
     <h3>Tools</h3>
-    <p>One-off actions: sort the <b>unassigned</b> pile (non-duplicates to the club; duplicates to the transfer list or for sale), send non-duplicates from the Transfer List to the club, clear sold items while recording profit, claim rewards, and a <b>protection</b> list of names that are never sold.</p>
+    <p>One-off actions: sort the <b>unassigned</b> pile (non-duplicates to the club; duplicates to the transfer list or for sale), send non-duplicates from the Transfer List to the club, clear sold items while recording profit, and claim rewards.</p>
     <h3>Shortcuts</h3>
     <p>In the Web App: <b>Alt+Shift+S</b> Snipe, <b>Alt+Shift+G</b> Gallery, <b>Alt+Shift+R</b> Relist (start or stop), <b>Alt+Shift+X</b> stop everything. In assisted mode, <b>Enter</b> buys and <b>Esc</b> skips.</p>
     <h3>The tools stop on their own when</h3>
@@ -440,11 +723,11 @@ PAGES.docs = () => {
     <p class="riskwhy">EA prohibits automation on the Web App. Using these tools can lead to transfer market restrictions or a ban. Use in moderation and at your own risk.</p>
     <p class="riskwhy">FUT Bots is free and open source (MIT). <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">Code on GitHub</a> · <a href="${DONATE_URL}" target="_blank" rel="noopener noreferrer">Support on Ko-fi</a></p>
   </div>` : I18N.get() === 'es' ? `<div class="docs">
-    <div class="ph"><div><h2>Cómo usar</h2><p>Tres herramientas para la Web App de EA FC Ultimate Team, controladas desde aquí.</p></div></div>
+    <div class="ph"><div><h2>Cómo usar</h2><p>Herramientas para la Web App de EA FC Ultimate Team, controladas desde aquí.</p></div></div>
     <h3>Antes que nada</h3>
     <ol>
       <li>Deja la <b>Web App abierta y visible</b> en la otra ventana. Este panel se abre en una ventana aparte justamente por eso: si la Web App queda minimizada o en una pestaña oculta, Chrome ralentiza los módulos.</li>
-      <li>Solo la Galería necesita <b>Paletools</b> (la pantalla Gallery es suya). El Sniper, el Relist y las Herramientas funcionan sin él: el precio más bajo lo calcula la propia extensión (Ajustes → Precio más bajo del mercado).</li>
+      <li>Solo la Galería necesita <b>Paletools</b> (la pantalla Gallery es suya). El Sniper, el Relist, Mi club y las Herramientas funcionan sin él: el precio más bajo lo calcula la propia extensión (Ajustes → Precio más bajo del mercado).</li>
       <li>Solo trabaja un módulo a la vez. Mientras uno funciona, los demás esperan (arriba del panel se ve quién está trabajando y está el botón <b>Detener</b>).</li>
       <li>En la Web App hay un widget pequeño con los tres módulos: desde él puedes iniciar, detener y abrir este panel.</li>
       <li>El idioma del panel se cambia con los botones <b>PT / EN / ES</b> de arriba. Los mensajes del log que todavía no están traducidos quedan en portugués.</li>
@@ -467,8 +750,23 @@ PAGES.docs = () => {
     <p>Las cartas que ya tienes pero no incluiste cuentan como tuyas: haz clic en <b>Include</b> en ellas para no gastar de más. La ganancia aparece en <b>Galería → Ganancias y ventas</b> cuando se abre la lista de transferibles.</p>
     <h3>Relist</h3>
     <p>Haz clic en <b>Relistar ahora</b> desde cualquier pantalla de la Web App. Abre la lista de transferibles, retira los vendidos y vuelve a publicar los caducados y los no publicados al "Más barato", respetando tu precio mínimo.</p>
+    <h3>Mi club</h3>
+    <ol>
+      <li>Haz clic en <b>Analizar club</b>: el bot lee todos los jugadores, con foto, estado y el último valor pagado por cada carta (<b>Comprada</b>). Las cartas de sobres o recompensas no tienen ese valor.</li>
+      <li>Filtra y selecciona las cartas, o usa <b>Seleccionar las filtradas</b>. Las cartas no negociables no se pueden seleccionar.</li>
+      <li><b>Buscar precio más bajo</b> pregunta directamente a la Web App, sin abrir pantallas. Rellena <b>Venta</b> (precio más bajo actual) y <b>Ganancia</b> (venta menos el 5% de EA, menos lo que pagaste). Haz clic en el título de una columna para ordenar. Esta búsqueda no vende ni mueve nada.</li>
+      <li>Cada carta cuenta como una búsqueda en el mercado y respeta el límite de 24 h y la velocidad del Sniper. Las cartas buscadas en los últimos 10 minutos se omiten.</li>
+      <li>Para vender, elige <b>Más barato</b> (sigue Ajustes → Precio más bajo del mercado) o <b>Precio fijo</b> y haz clic en <b>Vender seleccionadas</b>, o usa <b>Enviar a la lista de transferibles</b>.</li>
+      <li>La venta y el envío empiezan en <b>Prueba</b>: el bot abre cada carta y comprueba los botones sin vender ni mover nada. Cambia a <b>De verdad</b> cuando el log esté bien.</li>
+    </ol>
+    <p><b>Ir a</b> abre una pantalla en la Web App (Inicio, Jugadores del club, Buscar en el Mercado, Lista de transferibles, No asignados). Las acciones también abren solas las pantallas que necesitan.</p>
+    <p>La tabla también muestra quién está en el <b>equipo activo</b>. Usa los filtros y las reglas listas (<b>Solo con ganancia</b>, <b>Bronces y platas</b>, <b>Paradas de mayor valor</b>), exporta en <b>CSV</b>, abre el <b>Sniper</b> con el jugador listo o sigue el precio con los botones de la fila. <b>Búsqueda precisa</b> busca ofertas más baratas más allá de la primera página y usa hasta 4 búsquedas por carta.</p>
+    <h3>Transferencias</h3>
+    <p>Muestra la lista de transferibles sin abrir pantallas y guarda cada venta con su <b>ganancia real</b>. El total también aparece en el Panel, separado de los módulos.</p>
+    <h3>Seguir</h3>
+    <p>Busca un jugador, define un <b>objetivo</b> y usa <b>Comprobar ahora</b>, o activa <b>Comprobar solo</b> (mínimo 10 minutos). Cuando el precio llega al objetivo, aparece una notificación de Windows. Haz clic en un jugador para ver el gráfico de precios.</p>
     <h3>Herramientas</h3>
-    <p>Acciones puntuales: organizar los <b>no asignados</b> (no repetidos al club; repetidos a la lista de transf. o a la venta), enviar los no repetidos de la lista de transferibles al club, retirar los vendidos registrando la ganancia, reclamar recompensas y una lista de <b>protección</b> con nombres que nunca se venden.</p>
+    <p>Acciones puntuales: ordenar los <b>no asignados</b> (no repetidos al club; repetidos a la lista de transferibles o a la venta), enviar los no repetidos de la lista de transferibles al club, retirar los vendidos registrando la ganancia y reclamar recompensas.</p>
     <h3>Atajos</h3>
     <p>En la Web App: <b>Alt+Shift+S</b> Snipe, <b>Alt+Shift+G</b> Galería, <b>Alt+Shift+R</b> Relist (inicia o detiene), <b>Alt+Shift+X</b> detiene todo. En modo asistido, <b>Enter</b> compra y <b>Esc</b> salta.</p>
     <h3>Los módulos se detienen solos cuando</h3>
@@ -478,17 +776,18 @@ PAGES.docs = () => {
     <p class="riskwhy">EA prohíbe la automatización en la Web App. Usar estos módulos puede llevar a restricciones en el mercado o a un baneo. Úsalos con moderación y bajo tu propio riesgo.</p>
     <p class="riskwhy">FUT Bots es gratis y de código abierto (MIT). <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">Código en GitHub</a> · <a href="${DONATE_URL}" target="_blank" rel="noopener noreferrer">Apoyar en Ko-fi</a></p>
   </div>` : `<div class="docs">
-    <div class="ph"><div><h2>Como usar</h2><p>Três ferramentas para o EA FC Ultimate Team Web App, controladas daqui.</p></div></div>
+    <div class="ph"><div><h2>Como usar</h2><p>Ferramentas para o EA FC Ultimate Team Web App, controladas daqui.</p></div></div>
     <h3>Antes de tudo</h3>
     <ol>
       <li>Deixe o <b>Web App aberto e visível</b> na outra janela. Este painel abre numa janela separada justamente para isso: se o Web App ficar minimizado ou numa aba escondida, o Chrome desacelera os módulos.</li>
-      <li>Só a Galeria precisa do <b>Paletools</b> (a tela Gallery é dele). O Sniper, o Relist e as Ferramentas funcionam sem ele: o menor preço é calculado pela própria extensão (Configurações → Menor preço do mercado).</li>
+      <li>Só a Galeria precisa do <b>Paletools</b> (a tela Gallery é dele). O Sniper, o Relist, o Meu clube e as Ferramentas funcionam sem ele: o menor preço é calculado pela própria extensão (Configurações → Menor preço do mercado).</li>
       <li>Só um módulo trabalha por vez. Enquanto um roda, os outros esperam (o topo do painel mostra quem está trabalhando e tem o botão <b>Parar</b>).</li>
       <li>No Web App há um widget pequeno com os três módulos: dá para iniciar, parar e abrir este painel por ele.</li>
     </ol>
     <h3>Sniper</h3>
     <ol>
       <li>No Web App, abra <b>Transfer. → Pesquisar no Mercado</b> (jogadores ou consumíveis).</li>
+      <li>Para escolher um jogador, digite 3 letras do nome no Sniper: a lista aparece com foto, ID e nota, mesmo com o Web App fechado.</li>
       <li>No Sniper, clique em <b>Ler do Web App</b> e monte o filtro, ou monte direto no Web App e use <b>Copiar da tela</b>. Ao clicar em <b>Snipar</b>, o filtro do painel é aplicado no Web App; se nada estiver escolhido no painel, vale o que está na tela.</li>
       <li>Defina o <b>valor de oferta</b> (ou <b>% de lucro</b>), o que fazer <b>depois de comprar</b> e o ritmo.</li>
       <li>Escolha <b>Teste</b>, <b>Assistido</b> ou <b>Automático</b> na barra de baixo e clique em <b>Snipar</b>.</li>
@@ -504,8 +803,23 @@ PAGES.docs = () => {
     <p>Cartas que você já tem mas não incluiu contam como suas: clique em <b>Include</b> nelas para não gastar à toa. O lucro aparece em <b>Galeria → Lucro e vendas</b> quando a Lista de Transferências é aberta.</p>
     <h3>Relist</h3>
     <p>Clique em <b>Relistar agora</b> de qualquer tela do Web App. Ele abre a Lista de Transferências, retira os vendidos e anuncia de novo os expirados e os não listados pelo "Mais barato", respeitando o seu preço mínimo.</p>
+    <h3>Meu clube</h3>
+    <ol>
+      <li>Clique em <b>Analisar clube</b>: o bot lê todos os jogadores, com foto, status e o último valor pago por cada carta (<b>Comprei</b>). Cartas de pacote ou recompensa ficam sem esse valor.</li>
+      <li>Filtre e selecione as cartas, ou use <b>Selecionar as filtradas</b>. Cartas inegociáveis não podem ser selecionadas.</li>
+      <li><b>Buscar menor preço</b> pergunta o preço direto ao Web App, sem abrir telas. Preenche <b>Venda</b> (menor preço atual) e <b>Lucro</b> (venda menos os 5% do EA, menos o que você pagou). Clique no título da coluna para ordenar. Essa busca não vende nem move nada.</li>
+      <li>Cada carta conta como uma busca no mercado e respeita o limite de 24 h e a velocidade do Sniper. Cartas buscadas nos últimos 10 minutos são puladas.</li>
+      <li>Para vender, escolha <b>Mais barato</b> (segue Configurações → Menor preço do mercado) ou <b>Preço fixo</b> e clique em <b>Vender selecionadas</b>, ou use <b>Enviar para a Lista de Transferências</b>.</li>
+      <li>A venda e o envio começam em <b>Teste</b>: o bot abre cada carta e confere os botões sem vender nem mover nada. Mude para <b>De verdade</b> quando o log estiver certo.</li>
+    </ol>
+    <p><b>Ir para</b> abre uma tela no Web App (Início, Jogadores do clube, Pesquisar no Mercado, Lista de Transferências, Não atribuídos). As ações também abrem sozinhas as telas de que precisam.</p>
+    <p>A tabela também mostra quem está no <b>time ativo</b>. Use os filtros e as regras prontas (<b>Só com lucro</b>, <b>Bronzes e pratas</b>, <b>Paradas de maior valor</b>), exporte em <b>CSV</b>, abra o <b>Sniper</b> já com o jogador ou acompanhe o preço pelos botões da linha. A opção <b>Busca precisa</b> procura ofertas mais baratas além da primeira página e usa até 4 buscas por carta.</p>
+    <h3>Transferências</h3>
+    <p>Mostra a Lista de Transferências sem abrir telas e guarda cada venda com o <b>lucro real</b>. O total também aparece no Dashboard, separado dos módulos.</p>
+    <h3>Acompanhar</h3>
+    <p>Busque um jogador, defina um <b>alvo</b> e use <b>Conferir agora</b>, ou ligue <b>Conferir sozinho</b> (mínimo de 10 minutos). Quando o preço chega no alvo, aparece uma notificação do Windows. Clique num jogador para ver o gráfico de preço.</p>
     <h3>Ferramentas</h3>
-    <p>Ações de uma vez: organizar os <b>não atribuídos</b> (não repetidos para o clube; repetidos para a Lista de transf. ou à venda), enviar os não repetidos da Lista de Transferências ao clube, retirar os vendidos registrando o lucro, resgatar recompensas e uma lista de <b>proteção</b> com nomes que nunca são vendidos.</p>
+    <p>Ações de uma vez: organizar os <b>não atribuídos</b> (não repetidos para o clube; repetidos para a Lista de transf. ou para venda), enviar os não repetidos da Lista de Transferências ao clube, retirar os vendidos registrando o lucro e resgatar recompensas.</p>
     <h3>Atalhos</h3>
     <p>No Web App: <b>Alt+Shift+S</b> Snipe, <b>Alt+Shift+G</b> Galeria, <b>Alt+Shift+R</b> Relist (inicia ou para), <b>Alt+Shift+X</b> para tudo. No modo assistido, <b>Enter</b> compra e <b>Esc</b> pula.</p>
     <h3>Os módulos param sozinhos quando</h3>

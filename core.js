@@ -3,18 +3,18 @@
 // log/eventos e a trava que impede dois módulos de mexerem no Web App ao mesmo tempo.
 var FUT = (() => {
   'use strict';
-  const { norm, num, fmt, net, DEF, GAL_DEF, REL_DEF, DAY } = FSB;
+  const { norm, num, fmt, net, DEF, GAL_DEF, REL_DEF, CLUB_DEF, DAY } = FSB;
 
   // ---------- estado salvo (chrome.storage.local, compartilhado com o painel) ----------
-  // O painel é dono de: cfg, filters, alerts, presets, draft, galCfg, relCfg.
-  // O motor (aqui) é dono de: events, bank, prices, logs, reqs, schema, galBuys, galSold.
+  // O painel é dono de: cfg, filters, alerts, presets, draft, galCfg, relCfg, clubCfg, watch.
+  // O motor (aqui) é dono de: events, bank, prices, logs, reqs, schema, galBuys, galSold, club, tl, sales, priceHist, watchRes.
   const store = chrome.storage.local;
   const D = {
-    cfg: { ...DEF }, filters: [], alerts: {}, galCfg: { ...GAL_DEF }, relCfg: { ...REL_DEF },
-    events: [], bank: [], prices: {}, logs: [], reqs: [], galBuys: [], galSold: {},
+    cfg: { ...DEF }, filters: [], alerts: {}, galCfg: { ...GAL_DEF }, relCfg: { ...REL_DEF }, clubCfg: { ...CLUB_DEF }, watch: [],
+    events: [], bank: [], prices: {}, logs: [], reqs: [], galBuys: [], galSold: {}, club: null, tl: null, sales: [], priceHist: {}, watchRes: {},
   };
-  const PANEL_KEYS = ['cfg', 'filters', 'alerts', 'galCfg', 'relCfg'];
-  const fixAll = (k, v) => k === 'cfg' ? { ...DEF, ...FSB.fixCfg(v || {}) } : k === 'galCfg' ? { ...GAL_DEF, ...(v || {}) } : k === 'relCfg' ? { ...REL_DEF, ...(v || {}) } : v;
+  const PANEL_KEYS = ['cfg', 'filters', 'alerts', 'galCfg', 'relCfg', 'clubCfg', 'watch'];
+  const fixAll = (k, v) => k === 'cfg' ? { ...DEF, ...FSB.fixCfg(v || {}) } : k === 'galCfg' ? { ...GAL_DEF, ...(v || {}) } : k === 'relCfg' ? { ...REL_DEF, ...(v || {}) } : k === 'clubCfg' ? { ...CLUB_DEF, ...(v || {}) } : v;
   const listeners = [];
   const onChange = fn => listeners.push(fn);
   const alive = () => { try { return !!chrome.runtime.id; } catch { return false; } };
@@ -49,7 +49,7 @@ var FUT = (() => {
   function persist(...keys) { keys.forEach(k => dirty.add(k)); clearTimeout(flushT); flushT = setTimeout(flush, 350); }
   function flush() {
     if (!alive()) return;
-    D.events = D.events.slice(-5000); D.bank = D.bank.slice(-3000); D.logs = D.logs.slice(-4000); D.galBuys = D.galBuys.slice(-5000);
+    D.events = D.events.slice(-5000); D.bank = D.bank.slice(-3000); D.logs = D.logs.slice(-4000); D.galBuys = D.galBuys.slice(-5000); D.sales = D.sales.slice(-3000);
     const now = Date.now(); D.reqs = D.reqs.filter(t => now - t < DAY);
     for (const k of Object.keys(D.prices)) D.prices[k] = D.prices[k].slice(-500);
     const o = {};
@@ -167,6 +167,10 @@ var FUT = (() => {
     sendNonDup: /^(Envie|Enviar|Send)\s+(n[ãa]o|non?)[-\s]?dup\S*\s+.*\bclu(b|be)\b/i,
     transfersNav: /^(Transfer\.?|Transfers|Transferencias|Fichajes)$/i,
     home: /^(In[íi]cio|Home)$/i,
+    clubNav: /^(Clube|Club)$/i,
+    playersTile: /^(Jogadores|Players|Jugadores)$/i,
+    marketTile: /^(Pesquisar no Mercado|Search the Transfer Market|Search Transfer Market|Buscar en el mercado( de (fichajes|transferencias))?)$/i,
+    nextPage: /^(Pr[óo]xim[ao]|Next|Siguiente)$/i,
     gallery: /^(Gallery|Galeria|Galer[íi]a)$/i,
     // posições (pt / en / es), para diferenciar versões da mesma carta
     comparePrice: /^(Comparar pre[çc]o|Compare Price|Comparar precio)$/i,
@@ -198,6 +202,7 @@ var FUT = (() => {
     const t = popupText();
     const cap = document.querySelector('iframe[src*="captcha"], iframe[title*="captcha" i], #funcaptcha');
     if (!t && !cap) return;
+    if (cap || T.captcha.test(t)) notify('FUT Bots', 'Apareceu verificação (captcha) no Web App.');
     if (cap || T.captcha.test(t)) throw new Stop('Apareceu verificação (captcha). Resolva na página e inicie de novo.');
     if (T.noCoins.test(t)) throw new Stop('Moedas insuficientes.');
     if (T.unassigned.test(t)) throw new Stop('Itens não atribuídos demais: resolva os não atribuídos e inicie de novo.');
@@ -369,7 +374,7 @@ var FUT = (() => {
     setInput(ins[ins.length - 1], bn); await sleep(150);
     const r = await confirmListing();
     if (r === 'full') return { ok: false, full: true, why: 'a Lista de Transferências está cheia' };
-    return { ok: true, bn, start };
+    return { ok: true, bn, start, confirmed: r === 'ok' };
   }
 
   // ---------- Lista de Transferências ----------
@@ -405,6 +410,55 @@ var FUT = (() => {
     await waitFor(() => onTransferList() && !loading(), 20000, 'a Lista de Transferências abrir', 200);
     await sleep(1200);
   }
+  // ---------- navegação pelos menus ----------
+  const tabClick = el => click(el.closest('.ut-tab-bar-item, button, [role=button], a') || el);
+  const tileOf = t => t ? (t.closest('.tile, [class*="tile"], button, [role=button]') || t) : null;
+  const outsideBar = e => !e.closest('.ut-navigation-bar-view, .ut-tab-bar-view, .ut-tab-bar, nav');
+  async function goHome() {
+    const home = [...document.querySelectorAll('.ut-tab-bar-item.icon-home')].find(vis) || navBtn(T.home) || leavesWithText(T.home)[0];
+    if (!home) throw new Stop('Não achei o menu Início do Web App.');
+    tabClick(home);
+    await waitFor(() => !loading(), 10000, null, 150);
+    await sleep(800);
+  }
+  // Clube → Jogadores. Sempre sai do menu, então a lista abre na primeira página.
+  async function goToClub(log = () => {}) {
+    const tile = () => [...document.querySelectorAll('.players-tile, [class*="players-tile"]')].find(vis) || tileOf(leavesWithText(T.playersTile).find(outsideBar));
+    const nav = () => [...document.querySelectorAll('.ut-tab-bar-item.icon-club')].find(vis) || navBtn(T.clubNav);
+    for (let tries = 0; tries < 3 && (tries === 0 || !tile()); tries++) {
+      const n = nav();
+      if (!n) throw new Stop('Não achei o menu "Clube" na barra lateral do Web App.');
+      log(`   abrindo Clube${tries ? ' (de novo)' : ''}…`);
+      tabClick(n);
+      await waitFor(() => !loading() && tile(), 8000, null, 200);
+    }
+    const t = tile();
+    if (!t) throw new Error('a tela Clube não abriu');
+    await sleep(600);
+    log('   abrindo Jogadores…');
+    click(t);
+    // algumas versões abrem a lista direto; outras mostram os filtros antes
+    const got = await waitFor(() => { if (loading()) return null; return items().length ? 'list' : fastFind(T.search) ? 'filters' : null; }, 12000, 'a tela Jogadores abrir', 200);
+    if (got === 'filters') {
+      const reset = fastFind(T.reset);
+      if (reset) { click(reset); await sleep(500); }
+      click(fastFind(T.search));
+    }
+    await waitFor(() => !loading() && items().length, 20000, 'a lista de jogadores do clube abrir', 200);
+    await sleep(800);
+  }
+  async function goToMarket(log = () => {}) {
+    if (searchView()) return;
+    const tile = () => [...document.querySelectorAll('.ut-tile-transfer-market, [class*="tile-transfer-market"]')].find(vis) || tileOf(leavesWithText(T.marketTile).find(outsideBar));
+    const nav = [...document.querySelectorAll('.ut-tab-bar-item.icon-transfer')].find(vis) || navBtn(/^(Transfer|Fichajes)/i);
+    if (!nav) throw new Stop('Não achei o menu "Transfer." na barra lateral do Web App.');
+    log('   abrindo Transfer.…');
+    tabClick(nav);
+    const t = await waitFor(tile, 8000, 'a tela Transfer. abrir', 200);
+    await sleep(600);
+    click(t);
+    await waitFor(() => searchView() && !loading(), 12000, 'a tela Pesquisar no Mercado abrir', 200);
+  }
   // "Retirar vendidos": as moedas já caíram na conta, só tira os itens da lista
   const hooks = {};
   async function clearSold(log = () => {}) {
@@ -427,6 +481,7 @@ var FUT = (() => {
     while (limitHits.length && now - limitHits[0] > 15 * 6e4) limitHits.shift();
     limitHits.push(now);
     ev('block', { why: 'aviso do EA: ' + e.message });
+    notify('FUT Bots', 'O EA pediu calma: ' + e.message);
     if (limitHits.length >= 3) throw new Stop(`O EA limitou o mercado 3 vezes em 15 min. Pare um bom tempo. Aviso: "${e.message}"`);
     const s = rndInt(90, 180) * limitHits.length;
     logf(`   ⏸ aviso do EA: "${e.message}" — pausando ${s}s e continuando (${limitHits.length}/3)…`, 'warn');
@@ -434,8 +489,31 @@ var FUT = (() => {
     dismissNotifications();
     await idle(s * 1000);
   }
-  // lista de proteção: nomes que nunca são vendidos nem relistados
-  const blocked = name => { const n = norm(name || '').toLowerCase(); return !!n && (D.cfg.block || []).some(b => b && n.includes(String(b).toLowerCase())); };
+
+  // notificação do Windows; avisos iguais só uma vez por minuto
+  const lastNote = {};
+  function notify(title, body) {
+    if (!D.cfg.notify || !alive() || Date.now() - (lastNote[body] || 0) < 6e4) return;
+    lastNote[body] = Date.now();
+    try { chrome.runtime.sendMessage({ type: 'notify', title, body }).catch(() => {}); } catch {}
+  }
+
+  // ---------- ponte com a página (page.js): leituras direto dos serviços do Web App ----------
+  const pageCalls = new Map();
+  let pageSeq = 0;
+  addEventListener('message', e => {
+    const d = e.data;
+    if (e.source !== window || !d || d.__futBots !== 'res' || !pageCalls.has(d.id)) return;
+    const p = pageCalls.get(d.id);
+    pageCalls.delete(d.id); clearTimeout(p.t);
+    if (d.ok) p.res(d.data); else p.rej(Object.assign(new Error(d.error || 'erro no Web App'), { status: d.status }));
+  });
+  const pageCall = (op, args = {}, ms = 20000) => new Promise((res, rej) => {
+    const id = ++pageSeq;
+    const t = setTimeout(() => { pageCalls.delete(id); rej(new Error('a ponte com o Web App não respondeu')); }, ms);
+    pageCalls.set(id, { res, rej, t });
+    window.postMessage({ __futBots: 'req', id, op, args }, location.origin);
+  });
 
   // ---------- log, eventos, banca ----------
   let logSrc = '';
@@ -498,7 +576,7 @@ var FUT = (() => {
     checkBlockers, waitFor, idle, closeDialog, confirmIfAsked, escKey, dismissNotifications,
     items, rowBuyNow, buyBtn, btnPrice, noResultsEl, ownedPanel, coins, itemIdent, headerTitle,
     setInput, searchView, priceInputs, openListing, confirmListing, listCheapest, listFixed,
-    navBtn, onTransferList, goToTransferList, clearSold, hooks, limitPause, blocked, paletoolsActive, cheapestOwn,
+    navBtn, onTransferList, goToTransferList, goHome, goToClub, goToMarket, clearSold, hooks, limitPause, pageCall, notify, paletoolsActive, cheapestOwn,
     log, ev, sampleBank, beep, mod, status, command,
   };
 })();

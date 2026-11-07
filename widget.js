@@ -82,7 +82,7 @@
     $('cf').hidden = !p;
     if (p) $('cfT').textContent = `${p.name} · ${fmt(p.price)} · ${p.left}s`;
     const L = D.logs, l = L[L.length - 1];
-    const line = (o === 'snipe' && s.snipe.S.last) || (o === 'gal' && s.gal.G.line) || (o === 'rel' && s.rel.R.line) || (o === 'tools' && `${tr('Ferramentas')}: ${tr(F.run.what)}${s.tools && s.tools.R.line ? ' · ' + s.tools.R.line : ''}`) || '';
+    const line = (o === 'snipe' && s.snipe.S.last) || (o === 'gal' && s.gal.G.line) || (o === 'rel' && s.rel.R.line) || (o === 'tools' && `${tr('Ferramentas')}: ${tr(F.run.what)}${s.tools && s.tools.R.line ? ' · ' + s.tools.R.line : ''}`) || (o === 'club' && `${tr('Clube')}: ${tr(F.run.what)}${s.club && s.club.R.line ? ' · ' + s.club.R.line : ''}`) || '';
     $('last').textContent = line ? tr(line) : (l ? I18N.trLog(l.m) : tr('pronto'));
     $('last').className = 'last ' + (line ? '' : (l && l.c) || '');
   }

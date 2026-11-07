@@ -9,7 +9,8 @@ Extensão **gratuita e de código aberto** para o Chrome com três ferramentas p
 | **Sniper** | Repete a busca do Mercado com o seu filtro e compra no **Comprar já** tudo o que aparecer até o seu preço. Depois manda a carta para o clube ou para a Lista de Transferências, deixa nos não atribuídos ou vende. |
 | **Galeria** | Completa as galerias do **Paletools**: compra as cartas que faltam (até o seu preço), lista no mais barato e passa para o próximo time. |
 | **Relist** | Abre a Lista de Transferências, retira os vendidos e anuncia de novo os expirados e os não listados pelo "Mais barato". |
-| **Ferramentas** | Organiza os não atribuídos, envia os não repetidos da Lista de Transferências ao clube, retira os vendidos registrando o lucro, resgata recompensas e protege cartas que você nunca quer vender. |
+| **Meu clube** | Lista todos os jogadores do clube, com filtros e seleção, e vende as cartas escolhidas (preço fixo ou mais barato) ou envia para a Lista de Transferências. |
+| **Ferramentas** | Organiza os não atribuídos, envia os não repetidos da Lista de Transferências ao clube, retira os vendidos registrando o lucro e resgata recompensas. |
 
 O painel também tem dashboard de lucro e banca, histórico, gráfico de preços por filtro, simulador de lucro, estratégias prontas, 10 temas e 3 idiomas (**português, inglês e espanhol**, no seletor PT / EN / ES do topo).
 
@@ -110,13 +111,39 @@ No painel → **Relist**, escolha o que relistar (expirados, não listados), o p
 
 ---
 
+## Meu clube
+
+No painel → **Meu clube**:
+
+1. **Analisar clube** abre Clube → Jogadores, passa por todas as páginas e lista seus jogadores.
+2. Filtre por nome, qualidade, posição, nota e negociável, e selecione as cartas. As fotos vêm do próprio Web App do EA.
+3. Com as cartas selecionadas, **Buscar menor preço** pergunta o preço direto ao Web App, sem abrir telas, e preenche **Venda** e **Lucro** (venda menos os 5% do EA, menos o valor em **Comprei**). Cada carta conta como uma busca no mercado e respeita o limite de 24 h.
+4. Escolha **Mais barato** (segue Configurações → Menor preço do mercado, ou seja, o Paletools se estiver ativo) ou **Preço fixo**, com um mínimo opcional para o mais barato.
+5. Clique em **Vender selecionadas** ou **Enviar para a Lista de Transferências**. O bot abre as telas sozinho.
+
+A venda e o envio começam em **Teste**: o bot abre cada carta e confere os botões sem vender nem mover nada. Cartas inegociáveis não podem ser selecionadas. O cartão **Ir para** abre uma tela do Web App quando você pedir.
+
+## Transferências e Acompanhar
+
+- **Transferências:** mostra a Lista de Transferências no painel e guarda cada venda com o lucro real. Confere as vendas a cada 5 minutos com o Web App aberto (dá para desligar em Configurações).
+- **Acompanhar:** avisa por notificação do Windows quando um jogador chega no alvo e guarda o histórico de preço. A conferência automática vem desligada e roda no mínimo a cada 10 minutos.
+
+## Testes
+
+```
+cd tests
+npm install
+npm test
+```
+
+Os testes simulam o Web App e o painel com jsdom. Eles não substituem um teste no Web App real.
+
 ## Ferramentas
 
 No painel → **Ferramentas**:
 - **Não atribuídos:** não repetidos vão para o clube; repetidos vão para a Lista de transf., à venda no mais barato ou ficam.
 - **Lista de Transferências:** enviar os não repetidos ao clube e retirar os vendidos (registrando o lucro real, inclusive das cartas do Sniper).
 - **Recompensas:** resgata o que estiver disponível na tela e em Objetivos (experimental).
-- **Proteção:** nomes que nunca são vendidos nem relistados.
 
 **Atalhos no Web App:** Alt+Shift+S (Snipe), Alt+Shift+G (Galeria), Alt+Shift+R (Relist), Alt+Shift+X (parar tudo); no modo assistido, Enter compra e Esc pula.
 

@@ -1,0 +1,10 @@
+{
+  "name": "fut-bots-tests",
+  "private": true,
+  "scripts": {
+    "test": "node sim.test.js && node painel.test.js && node fotos.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}

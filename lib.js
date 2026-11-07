@@ -1,14 +1,16 @@
 // Constantes e contas compartilhadas entre os motores no Web App e o painel de controle.
 var FSB = (() => {
-  const VERSION = '2.4.1';
+  const VERSION = '2.5.0';
   const DONATE_URL = 'https://ko-fi.com/ericklucena';
   const REPO_URL = 'https://github.com/Ericklucenaa/fut-bots';
   // módulos da extensão
-  const MODS = { snipe: { name: 'Snipe', hint: 'busca e compra no Comprar já' }, gal: { name: 'Galeria', hint: 'completa as galerias do Paletools' }, rel: { name: 'Relist', hint: 'relista a Lista de Transferências' }, tools: { name: 'Ferramentas', hint: 'organiza o clube e as listas' } };
+  const MODS = { snipe: { name: 'Snipe', hint: 'busca e compra no Comprar já' }, gal: { name: 'Galeria', hint: 'completa as galerias do Paletools' }, rel: { name: 'Relist', hint: 'relista a Lista de Transferências' }, tools: { name: 'Ferramentas', hint: 'organiza o clube e as listas' }, club: { name: 'Clube', hint: 'analisa o clube e vende as cartas escolhidas' } };
   // Galeria: compra as cartas que faltam e lista no mais barato
   const GAL_DEF = { maxPrice: 4000, maxTotal: 0, qty: 5, autoQty: true, autoNext: true, maxSets: 0, respectSlots: true, list: true, minList: 0, cleanFull: true, cleanBetween: false, cleanEvery: 10, retries: 4, dryRun: true, delay: 900 };
   // Relist: relista expirados e não listados pelo mais barato
   const REL_DEF = { minPrice: 0, maxItems: 0, delay: 900, expired: true, unassigned: true, clearSold: true };
+  // Clube: analisa o clube e vende ou envia as cartas escolhidas (começa em teste)
+  const CLUB_DEF = { dryRun: true, how: 'cheapest', price: 0, minPrice: 0, delay: 900, deep: false };
   // escada de preços do FUT
   const step = p => p < 1000 ? 50 : p < 10000 ? 100 : p < 50000 ? 250 : p < 100000 ? 500 : 1000;
   const ladderDown = p => Math.max(150, Math.floor(p / step(p)) * step(p));
@@ -70,7 +72,9 @@ var FSB = (() => {
     preset: '', theme: 'brasa',
     priceSrc: 'auto',              // menor preço: auto = Paletools se ativo, senão a extensão · own · paletools
     uaClub: true, uaDup: 'tl',     // não atribuídos: não repetidos → clube · repetidos → tl | sell | keep
-    block: [], keys: true,         // nomes protegidos (nunca vender/relistar) · atalhos de teclado
+    keys: true,                    // atalhos de teclado
+    notify: true, trackSales: true,  // notificações do Windows · confere as vendas a cada 5 min
+    watchOn: false, watchMin: 15,  // lista de acompanhamento: desligada por padrão
   };
   // temas: dark = color-scheme; on = cor do texto em cima do degradê
   const T0 = { bg: '#0a0d13', bg1: '#10141c', bg2: '#161b26', bg3: '#1e2533', line: '#252d3c', line2: '#323c4f', tx: '#eef1f7', tx2: '#b9c1d1', mut: '#7f8aa1', good: '#3ee08f', warn: '#ffc548', bad: '#ff6b6b', tip: '#06080c', dark: true };
@@ -123,5 +127,5 @@ var FSB = (() => {
     return { t: 'Baixo', c: 'good', v: Math.max(8, Math.min(40, h / 200 * 40)), h, d, why: why.length ? why : ['sem problemas registrados'] };
   }
 
-  return { setLoc, loc, VERSION, DONATE_URL, REPO_URL, MODS, GAL_DEF, REL_DEF, step, ladderDown, ladderUp, ladderPrev, net, fmt, norm, num, SPEEDS, RESTS, TRIES, RUNFOR, AFTER, DEF, STRAT_KEYS, PRESETS, KIND, DAY, HOUR, riskLevel, THEMES, theme, applyTheme, DEST, SELLHOW, FALLBACK, destName, fixCfg };
+  return { setLoc, loc, VERSION, DONATE_URL, REPO_URL, MODS, GAL_DEF, REL_DEF, CLUB_DEF, step, ladderDown, ladderUp, ladderPrev, net, fmt, norm, num, SPEEDS, RESTS, TRIES, RUNFOR, AFTER, DEF, STRAT_KEYS, PRESETS, KIND, DAY, HOUR, riskLevel, THEMES, theme, applyTheme, DEST, SELLHOW, FALLBACK, destName, fixCfg };
 })();

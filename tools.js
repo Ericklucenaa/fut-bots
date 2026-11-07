@@ -13,16 +13,10 @@
   const R = { done: 0, total: 0, line: '' };
 
   // ---------- navegação ----------
-  async function goHome() {
-    const home = [...document.querySelectorAll('.ut-tab-bar-item.icon-home')].find(vis) || F.navBtn(T.home) || leavesWithText(T.home)[0];
-    if (!home) throw new Stop('Não achei o menu Início do Web App.');
-    click(home.closest('.ut-tab-bar-item, button, [role=button], a') || home);
-    await waitFor(() => !loading(), 10000); await pause();
-  }
   const onUnassigned = () => T.unassignedTile.test(F.headerTitle());
   async function goToUnassigned() {
     if (onUnassigned()) return true;
-    await goHome();
+    await F.goHome();
     const tile = await waitFor(() => { const t = leavesWithText(T.unassignedTile).find(e => !e.closest('.ut-navigation-bar-view')); return t ? (t.closest('.tile, [class*="tile"], button, [role=button]') || t) : null; }, 6000);
     if (!tile) return false;   // o Web App só mostra o quadro quando há itens
     click(tile);
@@ -30,6 +24,8 @@
     await pause(1.2);
     return true;
   }
+
+  F.hooks.goToUnassigned = goToUnassigned;
 
   // ---------- não atribuídos ----------
   // não repetidos → clube (se ligado) · repetidos → Lista de transf. | vender no mais barato | deixar
@@ -50,7 +46,6 @@
       if (!row) break;
       const id = F.itemIdent(row), name = `${id.name} ${id.rating || ''}`.trim();
       R.total++;
-      if (F.blocked(id.name)) { log(`   🔒 ${name}: protegido, deixei onde está.`); seen[id.name] = (seen[id.name] || 0) + 1; continue; }
       click(row); await pause(0.7);
       const club = await waitFor(() => fastFind(T.sendToClub), 4000);
       const dupItem = !club || club.disabled || club.classList.contains('disabled');

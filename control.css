@@ -268,3 +268,42 @@ td button:hover{background:var(--line2)}
 textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--tx);font:inherit;resize:vertical}
 textarea:focus{outline:2px solid color-mix(in srgb,var(--a1) 35%,transparent);border-color:var(--a1)}
 @media (max-width:1100px){.dests{grid-template-columns:repeat(2,1fr)}}
+/* Meu clube */
+.clubf{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+@media (max-width:1100px){.clubf{grid-template-columns:1fr 1fr}}
+.clubt{max-height:none;height:calc(100vh - 390px);min-height:420px}
+.tlt{max-height:calc(100vh - 330px)}
+.clubt th{z-index:2}
+.clubt th:first-child,.clubt td:first-child{width:34px;padding-right:0}
+.clubt th:nth-child(2),.clubt td:nth-child(2){width:52px}
+.clubt th:nth-child(4),.clubt td:nth-child(4){width:80px}
+.clubt th:nth-child(5),.clubt td:nth-child(5),.clubt th:nth-child(6),.clubt td:nth-child(6),.clubt th:nth-child(7),.clubt td:nth-child(7){width:105px}
+.clubt th:nth-child(8),.clubt td:nth-child(8){width:120px}
+.clubt th:nth-child(9),.clubt td:nth-child(9){width:76px}
+.clubt td.good{color:var(--good);font-weight:600}.clubt td.bad{color:var(--bad);font-weight:600}
+.clubt .mut{color:var(--mut)}
+.sortable{cursor:pointer}.sortable:hover{color:var(--tx)}
+#p-club .colside>.card>.btn{width:100%}
+#cEst:empty,#cProg:empty{display:none}
+.row.wrap{flex-wrap:wrap}
+#p-club .colside .go{width:100%}
+#p-club .field[hidden]{display:none}
+/* fotos dos jogadores */
+.pic{position:relative;flex:none;width:34px;height:34px;border-radius:8px;background:var(--bg3);color:var(--mut);display:grid;place-items:center;font-weight:700;font-size:13px;overflow:hidden}
+.pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.pl{display:flex;align-items:center;gap:10px}
+.sugg.pics{display:grid;gap:4px;max-height:280px;overflow:auto}
+.sugg.pics button{display:flex;align-items:center;gap:10px;text-align:left;padding:6px 10px}
+.sugg.pics button span:not(.pic){flex:1;min-width:0;font-weight:600}
+.sugg.pics small{display:block;color:var(--mut);font-weight:400}
+.sugg.pics b{font-size:14px;margin:0}
+/* carta desenhada */
+.fc{position:relative;flex:none;width:44px;height:54px;border-radius:7px 7px 12px 12px;overflow:hidden;display:block;box-shadow:inset 0 0 0 1px #0002}
+.fc.q-gold{background:linear-gradient(160deg,#f6e3a1,#c79a34)}.fc.q-silver{background:linear-gradient(160deg,#eef1f4,#a5aeb8)}.fc.q-bronze{background:linear-gradient(160deg,#e9b98c,#a66a3c)}
+.fc b,.fc i{position:absolute;left:4px;z-index:1;color:#1c1408;font-style:normal;line-height:1}
+.fc b{top:4px;font-size:12px}.fc i{top:17px;font-size:8px;font-weight:600}
+.fc .pic{position:absolute;right:-4px;bottom:0;width:36px;height:40px;background:none;border-radius:0;color:#1c140866}
+.acts2{white-space:nowrap;text-align:right}.acts2 button{width:28px;height:26px;padding:0;margin-left:3px;display:inline-grid;place-items:center}
+.acts2 svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+#wRows tr{cursor:pointer}#wRows tr.on{background:var(--bg2)}#wRows input{width:100px;text-align:right}
+

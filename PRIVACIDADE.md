@@ -32,7 +32,8 @@ Você pode apagar esses dados a qualquer momento em **Configurações → Limpar
 | --- | --- |
 | `storage` | Guardar configurações e histórico no seu computador. |
 | `tabs` | Encontrar a aba do Web App para o painel conversar com ela e abrir o painel numa janela. |
-| Acesso a `https://www.ea.com/*` | Rodar os módulos dentro do Web App. |
+| `notifications` | Avisar sobre vendas, preço no alvo, captcha e limites do EA. |
+| Acesso a `https://www.ea.com/*` | Rodar os módulos dentro do Web App, ler o clube e os preços pelos serviços do próprio Web App e carregar a lista pública de jogadores e as fotos. |
 
 ## Contato
 

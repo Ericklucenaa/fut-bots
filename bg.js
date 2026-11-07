@@ -13,4 +13,8 @@ async function openControl() {
 }
 
 chrome.action.onClicked.addListener(openControl);
-chrome.runtime.onMessage.addListener(m => { if (m && m.type === 'openControl') openControl(); });
+chrome.runtime.onMessage.addListener(m => {
+  if (m && m.type === 'openControl') openControl();
+  if (m && m.type === 'notify') chrome.notifications.create({ type: 'basic', iconUrl: 'icons/icon128.png', title: m.title, message: m.body });
+});
+chrome.notifications.onClicked.addListener(id => { openControl(); chrome.notifications.clear(id); });

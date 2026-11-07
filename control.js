@@ -1,18 +1,21 @@
 // Painel do FUT Bots: configura os módulos, mostra o dashboard e conversa com o motor no Web App.
 'use strict';
-const { ladderDown, ladderUp, ladderPrev, net, fmt, norm, num, SPEEDS, RESTS, TRIES, RUNFOR, DEF, STRAT_KEYS, PRESETS, KIND, DAY, HOUR, riskLevel, THEMES, applyTheme, DEST, SELLHOW, FALLBACK, destName, fixCfg, MODS, GAL_DEF, REL_DEF, VERSION, DONATE_URL, REPO_URL } = FSB;
+const { ladderDown, ladderUp, ladderPrev, net, fmt, norm, num, SPEEDS, RESTS, TRIES, RUNFOR, DEF, STRAT_KEYS, PRESETS, KIND, DAY, HOUR, riskLevel, THEMES, applyTheme, DEST, SELLHOW, FALLBACK, destName, fixCfg, MODS, GAL_DEF, REL_DEF, CLUB_DEF, VERSION, DONATE_URL, REPO_URL } = FSB;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ico = (id, cls = '') => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
+// foto do jogador; sem foto (ou se a imagem falhar) fica a inicial do nome
+const playerPic = (src, name) => `<span class="pic" data-notr>${esc(String(name || '?').charAt(0).toUpperCase())}${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : ''}</span>`;
+document.addEventListener('error', e => { if (e.target.matches && e.target.matches('.pic img')) e.target.remove(); }, true);
 const store = chrome.storage.local;
 const WEBAPP = 'https://www.ea.com/ea-sports-fc/ultimate-team/web-app/';
 
 // ---------- estado ----------
 const st = {
   cfg: { ...DEF }, filters: [], alerts: {}, presets: [], events: [], bank: [], prices: {}, logs: [], reqs: [], schema: null,
-  draft: { player: '', playerRating: null, sel: {} }, galCfg: { ...GAL_DEF }, relCfg: { ...REL_DEF }, galBuys: [],
+  draft: { player: '', playerRating: null, sel: {} }, galCfg: { ...GAL_DEF }, relCfg: { ...REL_DEF }, clubCfg: { ...CLUB_DEF }, club: null, galBuys: [], tl: null, sales: [], watch: [], watchRes: {}, priceHist: {},
 };
-const FIX = { cfg: v => ({ ...DEF, ...fixCfg(v || {}) }), galCfg: v => ({ ...GAL_DEF, ...(v || {}) }), relCfg: v => ({ ...REL_DEF, ...(v || {}) }) };
+const FIX = { cfg: v => ({ ...DEF, ...fixCfg(v || {}) }), galCfg: v => ({ ...GAL_DEF, ...(v || {}) }), relCfg: v => ({ ...REL_DEF, ...(v || {}) }), clubCfg: v => ({ ...CLUB_DEF, ...(v || {}) }) };
 let status = null, tabId = null, page = 'home';
 const saveCfg = () => store.set({ cfg: st.cfg });
 const save = k => store.set({ [k]: st[k] });
@@ -59,6 +62,7 @@ store.get(null, r => {
   for (const k of Object.keys(st)) if (r[k] !== undefined) st[k] = FIX[k] ? FIX[k](r[k]) : r[k];
   setLang(st.cfg.lang || I18N.detect(), false);
   setTheme(); buildStatic(); renderAll(); poll(); checkUpdate();
+  PDB.load().then(ok => { if (ok && page === 'club') clubTable(); });
   I18N.install(document.body);
 });
 
@@ -105,11 +109,15 @@ async function checkUpdate() {
 }
 chrome.storage.onChanged.addListener((ch, area) => {
   if (area !== 'local') return;
-  for (const [k, v] of Object.entries(ch)) if (k in st) st[k] = FIX[k] ? FIX[k](v.newValue) : v.newValue ?? (Array.isArray(st[k]) ? [] : k === 'schema' ? null : {});
+  for (const [k, v] of Object.entries(ch)) if (k in st) st[k] = FIX[k] ? FIX[k](v.newValue) : v.newValue ?? (Array.isArray(st[k]) ? [] : k === 'schema' || k === 'club' || k === 'tl' ? null : {});
   if (ch.logs) renderLog();
   if (ch.schema) renderFilterGrid();
   if (ch.filters) renderFilters();
   if (ch.cfg) { setTheme(); if (st.cfg.lang && st.cfg.lang !== I18N.get()) setLang(st.cfg.lang); refreshInputs(); sync(); renderFilterHint(); }
+  if (ch.club && page === 'club') clubTable();
+  if ((ch.tl || ch.sales) && page === 'tl') tlTable();
+  if ((ch.watch || ch.watchRes || ch.priceHist) && page === 'watch') watchTable();
+  if (ch.sales && page === 'dash') renderPage();
   if (ch.galCfg || ch.relCfg) { if (page === 'gal' || page === 'rel') renderPage(); syncBars(); }
   if (ch.events || ch.bank || ch.prices || ch.reqs || ch.galBuys) {
     renderRisk();
@@ -259,7 +267,7 @@ function renderStatus() {
   $('runbox').hidden = !o;
   if (o) $('runT').textContent = `${tr((MODS[o] || {}).name || o)}: ${tr(status.what)}${status.since ? ` · ${Math.max(0, Math.floor((Date.now() - status.since) / 6e4))} min` : ''}${status.stopping ? ' · parando…' : ''}`;
   for (const b of $('nav').querySelectorAll('button')) {
-    const live = o && ((o === 'snipe' && b.dataset.page === 'sniper') || (o === 'gal' && b.dataset.page === 'gal') || (o === 'rel' && b.dataset.page === 'rel') || (o === 'tools' && b.dataset.page === 'tools'));
+    const live = o && ((o === 'snipe' && b.dataset.page === 'sniper') || (o === 'gal' && b.dataset.page === 'gal') || (o === 'rel' && b.dataset.page === 'rel') || (o === 'tools' && b.dataset.page === 'tools') || (o === 'club' && ['club', 'tl', 'watch'].includes(b.dataset.page)));
     let dot = b.querySelector('.live');
     if (live && !dot) b.insertAdjacentHTML('beforeend', '<span class="live"></span>');
     if (!live && dot) dot.remove();
@@ -272,6 +280,7 @@ function renderStatus() {
   renderGo(); renderRisk(); syncBars();
   if (page === 'home' && typeof renderHome === 'function') renderHome(true);
   if (page === 'gal' && typeof galLive === 'function') galLive();
+  if (page === 'club' && typeof clubLive === 'function') clubLive();
 }
 function renderRisk() {
   const r = riskLevel(st.reqs, st.events), cap = st.cfg.dailyMax || 2000;
@@ -331,14 +340,22 @@ function buildFilterUi() {
   });
   $('fClear').onclick = () => { st.draft = { player: '', playerRating: null, sel: {}, prices: null }; save('draft'); renderFilterGrid(); toast('Filtro do painel limpo: o Sniper vai usar o filtro da tela do Web App.'); };
   $('fApply').onclick = () => act($('fApply'), async () => { await snipeCmd('apply', { filter: draftFilter('rascunho') }); toast('Filtro aplicado no Web App.', 'good'); });
+  // lista de jogadores com foto (banco do EA); sem o banco, pergunta ao Web App
+  const showPlayers = list => {
+    $('pSugg').classList.toggle('pics', list.some(p => p.id));
+    $('pSugg').innerHTML = list.map((p, i) => `<button data-i="${i}">${p.id ? playerPic(PDB.portrait(p.id), p.name) : ''}<span>${esc(p.name)}${p.id ? `<small>#${p.id}</small>` : ''}</span><b>${p.rating || ''}</b></button>`).join('');
+    $('pSugg').onclick = e => { const b = e.target.closest('button'); if (!b) return; const p = list[+b.dataset.i]; st.draft.player = p.name; st.draft.playerRating = p.rating; save('draft'); renderFilterGrid(); $('pSugg').innerHTML = ''; };
+  };
+  const dbPlayers = q => PDB.search(q).map(p => ({ id: p.id, name: p.name, rating: p.r }));
   $('pSearch').onclick = () => act($('pSearch'), async () => {
     const q = norm($('pName').value);
     if (q.length < 3) throw new Error('Digite pelo menos 3 letras do nome.');
-    const list = await snipeCmd('players', { q });
+    const list = PDB.ready() ? dbPlayers(q) : await snipeCmd('players', { q });
     if (!list.length) throw new Error('Nenhum jogador encontrado com esse nome.');
-    $('pSugg').innerHTML = list.map((p, i) => `<button data-i="${i}">${esc(p.name)}<b>${p.rating || ''}</b></button>`).join('');
-    $('pSugg').onclick = e => { const b = e.target.closest('button'); if (!b) return; const p = list[+b.dataset.i]; st.draft.player = p.name; st.draft.playerRating = p.rating; save('draft'); renderFilterGrid(); $('pSugg').innerHTML = ''; };
+    showPlayers(list);
   });
+  let typeT;
+  $('pName').oninput = () => { clearTimeout(typeT); typeT = setTimeout(() => { if (PDB.ready()) showPlayers(dbPlayers(norm($('pName').value))); }, 180); };
   $('pName').onchange = () => { st.draft.player = norm($('pName').value); st.draft.playerRating = null; save('draft'); renderFilterGrid(); };
   $('fSave').onclick = () => {
     const f = draftFilter(norm($('fName').value) || describe(draftFilter('')) || 'Filtro ' + (st.filters.length + 1));
@@ -531,6 +548,7 @@ function renderPage() {
     for (const e of evs) if (['bought', 'dry', 'lost'].includes(e.kind)) (byF[e.filter || '—'] = byF[e.filter || '—'] || []).push(e);
     const cnt = k => evs.filter(e => e.kind === k).length;
     const gb = st.galBuys.filter(b => b.t >= from), gs = gb.filter(b => b.status === 'sold'), gpl = sum(gs, b => net(b.sale) - b.buy);
+    const salesIn = st.sales.filter(x => x.t >= from), salesN = salesIn.length, salesPl = sum(salesIn, x => net(x.sale) - x.buy);
     const realE = s.bought.filter(e => e.real), sReal = sum(realE, e => e.profit), sRealN = realE.length;
     el.innerHTML = `
       <div class="ph"><div><h2>Dashboard</h2><p>Banca, lucro e saúde da conta somando os módulos.</p></div><span class="flex"></span>${periodSel()}</div>
@@ -542,6 +560,7 @@ function renderPage() {
           <div class="tile"><small>Snipe · ROI</small><b>${pct(s.roi)}</b><span>${fmt(s.bought.length)} compras · ${fmt(s.spent)} gastas</span></div>
           <div class="tile"><small>Snipe · acerto</small><b>${pct(s.hit)}</b><span>${s.lost.length} perdida(s) para outros</span></div>
           <div class="tile"><small>Galeria · lucro realizado</small><b class="${gpl >= 0 ? 'good' : 'bad'}">${fmt(gpl)}</b><span>${gs.length} vendida(s) de ${gb.length} comprada(s)</span></div>
+          <div class="tile"><small>Vendas · lucro real</small><b class="${salesPl >= 0 ? 'good' : 'bad'}">${fmt(salesPl)}</b><span>${salesN} venda(s) na Lista de Transferências</span></div>
           <div class="tile"><small>Carteira virtual (teste)</small><b class="${s.dryProfit >= 0 ? 'good' : 'bad'}">${fmt(s.dryProfit)}</b><span>${s.dry.length} simulada(s) · ROI ${pct(s.dryRoi)}</span></div>
         </div>
         <div class="g2">
